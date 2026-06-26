@@ -93,10 +93,7 @@ if check_password():
     # ==========================================
     @st.fragment
     def show_calendar():
-
         sheet_data = fetch_calendar_data()
-
-        # Format data for the calendar component
         calendar_events = []
         for row in sheet_data:
             if row.get("Title") and row.get("Start Date"):
@@ -106,8 +103,8 @@ if check_password():
                     "start": str(row.get("Start Date")).split("T")[0], 
                     "backgroundColor": color,
                     "borderColor": color,
-                    # --- NEW: Store your custom variables here! ---
                     "extendedProps": {
+                        "ID": row.get("ID", ""), # NEW: Pull the ID from the sheet
                         "Title": row.get("Title", "N/A"),
                         "Shipping Type": row.get("Shipping Type", "N/A"),
                         "PIC": row.get("PIC", "N/A"),
@@ -121,34 +118,20 @@ if check_password():
             "locale": "ja",  
         }
 
-        # --- NEW: Catch the state of the calendar ---
         custom_css = """
-        /* Saturday: Blue text and light blue background */
         .fc-day-sat .fc-col-header-cell-cushion, 
-        .fc-day-sat .fc-daygrid-day-number {
-            color: #0066cc !important; 
-        }
-        .fc-day-sat {
-            background-color: #f0f8ff !important; 
-        }
-
-        /* Sunday: Red text and light red background */
+        .fc-day-sat .fc-daygrid-day-number { color: #0066cc !important; }
+        .fc-day-sat { background-color: #f0f8ff !important; }
         .fc-day-sun .fc-col-header-cell-cushion, 
-        .fc-day-sun .fc-daygrid-day-number {
-            color: #cc0000 !important; 
-        }
-        .fc-day-sun {
-            background-color: #fff0f0 !important; 
-        }
+        .fc-day-sun .fc-daygrid-day-number { color: #cc0000 !important; }
+        .fc-day-sun { background-color: #fff0f0 !important; }
         """
 
-        # --- NEW: Add the custom_css parameter here ---
         cal_state = calendar(
             events=calendar_events, 
             options=calendar_options, 
             custom_css=custom_css
         )
-
         
 
         # --- NEW: Display event details if an event is clicked ---

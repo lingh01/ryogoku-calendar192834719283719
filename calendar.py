@@ -57,7 +57,7 @@ if check_password():
     with st.sidebar:
         
         # --- NEW: Form to permanently add a new title ---
-        with st.expander("⚙️ 取引先/タイトルを登録 (Add Title)"):
+        with st.expander("⚙️ 取引先/タイトルを登録"):
             new_title_input = st.text_input("新しいタイトル名")
             if st.button("データベースに保存"):
                 if new_title_input and new_title_input not in fetched_titles:

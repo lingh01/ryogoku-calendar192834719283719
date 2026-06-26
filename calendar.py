@@ -86,10 +86,13 @@ if check_password():
             
             shipping_options = ["通常発送", "自社都合追加発送", "他社都合追加発送", "緊急発送", "ハンドキャリー", "その他（e.g. 先方が受け取りに来る場合）"]
             shipping_type = st.selectbox("発送方法", shipping_options)
+
+            shipping_regions_list = ["国内", "海外"]
+            shipping_region = st.selectbox("発送地域")
             
             pic_name = st.text_input("担当者")
             item_count = st.number_input("発送件数", min_value=1, step=1)
-            
+
             submit_btn = st.form_submit_button("追加")
             
             if submit_btn:
@@ -106,6 +109,7 @@ if check_password():
                         "Title": final_title, # Use final_title here!
                         "Start Date": str(start_date),
                         "Shipping Type": shipping_type,
+                        "Shipping Region": shipping_region,
                         "PIC": pic_name,
                         "Item Count": item_count
                     }
@@ -180,6 +184,7 @@ if check_password():
                 st.markdown(f"**Date:** {clicked_event['start'].split('T')[0]}")
             with col2:
                 st.markdown(f"**発送方法:** {props.get('Shipping Type')}")
+                st.markdown(f"**発送地域:** {props.get('Shipping Region')}")
                 st.markdown(f"**担当者:** {props.get('PIC')}")
                 st.markdown(f"**発送件数:** {props.get('Item Count')}")
 
@@ -211,7 +216,13 @@ if check_password():
                             default_shipping_index = shipping_options.index(props.get("Shipping Type"))
                         except ValueError:
                             default_shipping_index = 0
-                            
+                        
+                        shipping_regions_list = ["国内", "海外"]
+                        try:
+                            default_shipping_region = shipping_regions_list.index(props.get("Shipping Region"))
+                        except ValueError:
+                            default_shipping_region = 0
+
                         edit_shipping = st.selectbox("発送方法", shipping_options, index=default_shipping_index)
                         edit_pic = st.text_input("担当者", value=props.get("PIC"))
                         

@@ -50,10 +50,13 @@ if check_password():
         st.header("➕ 新しい発送件を追加")
         
         with st.form("add_event_form", clear_on_submit=True):
-            # Easily add/remove fields here:
             event_title = st.text_input("タイトル")
             start_date = st.date_input("日付")
-            shipping_type = st.selectbox("発送方法", ["通常発送", "自社都合追加発送", "他社都合追加発送", "緊急発送", "ハンドキャリー", "その他（e.g. 先方が受け取りに来る場合）"])
+            
+            # Moved list outside to reuse it later in the edit form
+            shipping_options = ["通常発送", "自社都合追加発送", "他社都合追加発送", "緊急発送", "ハンドキャリー", "その他（e.g. 先方が受け取りに来る場合）"]
+            shipping_type = st.selectbox("発送方法", shipping_options)
+            
             pic_name = st.text_input("担当者")
             item_count = st.number_input("発送件数", min_value=1, step=1)
             
@@ -61,9 +64,9 @@ if check_password():
             
             if submit_btn:
                 if event_title:
-                    # Map your fields to a dictionary. 
-                    # Keys MUST match your Google Sheet headers exactly!
                     event_data = {
+                        "action": "add", # NEW: Tell Apps Script what to do
+                        "ID": str(uuid.uuid4()), # NEW: Create a random, unique ID
                         "Title": event_title,
                         "Start Date": str(start_date),
                         "Shipping Type": shipping_type,
@@ -71,12 +74,11 @@ if check_password():
                         "Item Count": item_count
                     }
                     
-                    with st.spinner("Saving to Google Sheets..."):
+                    with st.spinner("追加中..."):
                         response = requests.post(SCRIPT_URL, json=event_data)
                         
                     if response.status_code == 200 and response.json().get("status") == "success":
                         st.success("発送件を追加しました！")
-
                         fetch_calendar_data.clear()
                         st.rerun()
                     else:
@@ -157,9 +159,8 @@ if check_password():
             clicked_event = cal_state["eventClick"]["event"]
             props = clicked_event["extendedProps"]
             
-            # Display it nicely in columns
+            # View Mode
             col1, col2 = st.columns(2)
-            
             with col1:
                 st.markdown(f"**タイトル:** {props.get('Title')}")
                 st.markdown(f"**Date:** {clicked_event['start'].split('T')[0]}")
@@ -167,5 +168,72 @@ if check_password():
                 st.markdown(f"**発送方法:** {props.get('Shipping Type')}")
                 st.markdown(f"**担当者:** {props.get('PIC')}")
                 st.markdown(f"**発送件数:** {props.get('Item Count')}")
+
+            # Edit Mode (Hidden in an expander)
+            # Only allow editing if the event actually has an ID (older events might not have one yet!)
+            if event_id:
+                with st.expander("✏️ この予定を編集・削除する (Edit / Delete)"):
+                    with st.form("edit_event_form"):
+                        
+                        # Pre-fill the form with the existing data
+                        edit_title = st.text_input("タイトル", value=props.get("Title"))
+                        
+                        # Re-parse date for the date_input widget
+                        try:
+                            parsed_date = datetime.strptime(clicked_event['start'].split('T')[0], "%Y-%m-%d").date()
+                        except:
+                            parsed_date = datetime.now().date()
+                        edit_date = st.date_input("日付", value=parsed_date)
+                        
+                        shipping_options = ["通常発送", "自社都合追加発送", "他社都合追加発送", "緊急発送", "ハンドキャリー", "その他（e.g. 先方が受け取りに来る場合）"]
+                        
+                        # Try to find the existing index, default to 0 if it changed
+                        try:
+                            default_shipping_index = shipping_options.index(props.get("Shipping Type"))
+                        except ValueError:
+                            default_shipping_index = 0
+                            
+                        edit_shipping = st.selectbox("発送方法", shipping_options, index=default_shipping_index)
+                        edit_pic = st.text_input("担当者", value=props.get("PIC"))
+                        
+                        # Clean item count, ensure it's an int
+                        try:
+                            default_count = int(props.get("Item Count"))
+                        except:
+                            default_count = 1
+                        edit_count = st.number_input("発送件数", min_value=1, step=1, value=default_count)
+
+                        colA, colB = st.columns(2)
+                        with colA:
+                            submit_edit = st.form_submit_button("更新 (Update)")
+                        with colB:
+                            submit_delete = st.form_submit_button("🗑️ 削除 (Delete)")
+
+                        if submit_edit:
+                            update_data = {
+                                "action": "edit",
+                                "ID": event_id,
+                                "Title": edit_title,
+                                "Start Date": str(edit_date),
+                                "Shipping Type": edit_shipping,
+                                "PIC": edit_pic,
+                                "Item Count": edit_count
+                            }
+                            with st.spinner("更新中..."):
+                                requests.post(SCRIPT_URL, json=update_data)
+                            fetch_calendar_data.clear()
+                            st.rerun()
+                            
+                        if submit_delete:
+                            delete_data = {
+                                "action": "delete",
+                                "ID": event_id
+                            }
+                            with st.spinner("削除中..."):
+                                requests.post(SCRIPT_URL, json=delete_data)
+                            fetch_calendar_data.clear()
+                            st.rerun()
+            else:
+                st.warning("⚠️ このイベントはIDがないため編集できません (古いデータです)。")
 
     show_calendar()

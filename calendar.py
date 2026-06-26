@@ -80,7 +80,7 @@ if check_password():
         with st.form("add_event_form", clear_on_submit=True):
             # --- FIXED: Always show both, decide on submit ---
             selected_title = st.selectbox("タイトル", TITLE_OPTIONS)
-            custom_title = st.text_input("※「その他」を選んだ場合のみ入力してください (If other, type here)")
+            custom_title = st.text_input("※「その他」を選んだ場合のみ入力してください")
             
             start_date = st.date_input("日付")
             

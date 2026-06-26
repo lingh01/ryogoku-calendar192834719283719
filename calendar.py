@@ -78,13 +78,10 @@ if check_password():
         st.header("➕ 新しい発送件を追加")
         
         with st.form("add_event_form", clear_on_submit=True):
+            # --- FIXED: Always show both, decide on submit ---
             selected_title = st.selectbox("タイトル", TITLE_OPTIONS)
+            custom_title = st.text_input("※「その他」を選んだ場合のみ入力してください (If other, type here)")
             
-            if selected_title == "その他（自由入力）":
-                event_title = st.text_input("タイトルを入力してください")
-            else:
-                event_title = selected_title
-                
             start_date = st.date_input("日付")
             
             shipping_options = ["通常発送", "自社都合追加発送", "他社都合追加発送", "緊急発送", "ハンドキャリー", "その他（e.g. 先方が受け取りに来る場合）"]
@@ -96,11 +93,17 @@ if check_password():
             submit_btn = st.form_submit_button("追加")
             
             if submit_btn:
-                if event_title:
+                # Figure out which title to use before saving
+                if selected_title == "その他（自由入力）":
+                    final_title = custom_title
+                else:
+                    final_title = selected_title
+
+                if final_title: # Make sure it isn't blank
                     event_data = {
                         "action": "add", 
                         "ID": str(uuid.uuid4()), 
-                        "Title": event_title,
+                        "Title": final_title, # Use final_title here!
                         "Start Date": str(start_date),
                         "Shipping Type": shipping_type,
                         "PIC": pic_name,
@@ -192,12 +195,9 @@ if check_password():
                             default_title_index = TITLE_OPTIONS.index("その他（自由入力）")
                             default_custom_title = current_title 
 
+                        # --- FIXED: Always show both in the edit form too ---
                         edit_selected_title = st.selectbox("タイトル", TITLE_OPTIONS, index=default_title_index)
-                        
-                        if edit_selected_title == "その他（自由入力）":
-                            edit_title = st.text_input("タイトルを入力してください", value=default_custom_title)
-                        else:
-                            edit_title = edit_selected_title
+                        edit_custom_title = st.text_input("※「その他」を選んだ場合のみ入力してください", value=default_custom_title)
                         
                         try:
                             parsed_date = datetime.strptime(clicked_event['start'].split('T')[0], "%Y-%m-%d").date()
@@ -228,10 +228,16 @@ if check_password():
                             submit_delete = st.form_submit_button("🗑️ 削除 (Delete)")
 
                         if submit_edit:
+                            # Figure out the title to update
+                            if edit_selected_title == "その他（自由入力）":
+                                final_edit_title = edit_custom_title
+                            else:
+                                final_edit_title = edit_selected_title
+
                             update_data = {
                                 "action": "edit",
                                 "ID": event_id,
-                                "Title": edit_title,
+                                "Title": final_edit_title, # Use final_edit_title here!
                                 "Start Date": str(edit_date),
                                 "Shipping Type": edit_shipping,
                                 "PIC": edit_pic,

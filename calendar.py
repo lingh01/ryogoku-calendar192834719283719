@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_calendar import calendar
 from datetime import datetime
 import requests
+import uuid  # NEW: We need this to generate unique IDs for each row
 
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhDt08hJDuXwJFYxQ5BXkhlsK9xpl3ClmR22mL-mUFLe9o8Sf_G0Hix1TyNmyNXYvs/exec"
 

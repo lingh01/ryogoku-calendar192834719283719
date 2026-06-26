@@ -88,7 +88,7 @@ if check_password():
             shipping_type = st.selectbox("発送方法", shipping_options)
 
             shipping_regions_list = ["国内", "海外"]
-            shipping_region = st.selectbox("発送地域")
+            shipping_region = st.selectbox("発送地域", shipping_regions_list)
             
             pic_name = st.text_input("担当者")
             item_count = st.number_input("発送件数", min_value=1, step=1)

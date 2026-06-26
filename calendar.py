@@ -153,11 +153,11 @@ if check_password():
         # --- NEW: Display event details if an event is clicked ---
         if cal_state.get("eventClick"):
             st.divider()
-            st.subheader("🔍 Event Details")
+            st.subheader("🔍 詳細 / 編集 (Details & Edit)")
             
-            # The clicked event's data is buried inside the state dictionary
             clicked_event = cal_state["eventClick"]["event"]
             props = clicked_event["extendedProps"]
+            event_id = props.get("ID")
             
             # View Mode
             col1, col2 = st.columns(2)

@@ -8,7 +8,6 @@ SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhDt08hJDuXwJFYxQ5BXkhlsK
 
 # --- PASSWORD PROTECTION ---
 def check_password():
-    """Returns `True` if the user had the correct password."""
     def password_entered():
         if st.session_state["password"] == st.secrets["password"]:
             st.session_state["password_correct"] = True
@@ -30,31 +29,64 @@ def check_password():
 if check_password():
     st.title("発送件カレンダー 📅")
     
-
     # ==========================================
-    # NEW: CACHED DATA FETCHING
+    # CACHED DATA FETCHING
     # ==========================================
-    @st.cache_data(ttl=300) # Memorizes the data for 5 minutes (300 seconds)
-    def fetch_calendar_data():
+    @st.cache_data(ttl=300) 
+    def fetch_database_data():
+        """Fetches both Events and Titles from Google Sheets"""
         try:
             response = requests.get(SCRIPT_URL)
             if response.status_code == 200:
                 return response.json()
-            return []
+            return {"events": [], "titles": []}
         except:
-            return []
+            return {"events": [], "titles": []}
+
+    # Extract our data from the payload
+    db_data = fetch_database_data()
+    sheet_data = db_data.get("events", [])
+    fetched_titles = db_data.get("titles", [])
+    
+    # Build our title options dynamically from the spreadsheet
+    TITLE_OPTIONS = fetched_titles + ["その他（自由入力）"]
 
     # ==========================================
-    # 1. EVENT CREATION FORM
+    # 1. SIDEBAR FORMS
     # ==========================================
     with st.sidebar:
+        
+        # --- NEW: Form to permanently add a new title ---
+        with st.expander("⚙️ 取引先/タイトルを登録 (Add Title)"):
+            new_title_input = st.text_input("新しいタイトル名")
+            if st.button("データベースに保存"):
+                if new_title_input and new_title_input not in fetched_titles:
+                    payload = {
+                        "action": "add_title", 
+                        "Title": new_title_input
+                    }
+                    with st.spinner("保存中..."):
+                        requests.post(SCRIPT_URL, json=payload)
+                    fetch_database_data.clear() # Clear cache to fetch the new title
+                    st.success("追加しました！")
+                    st.rerun()
+                elif new_title_input in fetched_titles:
+                    st.warning("すでに登録されています。")
+
+        st.divider()
+
         st.header("➕ 新しい発送件を追加")
         
         with st.form("add_event_form", clear_on_submit=True):
-            event_title = st.text_input("タイトル")
+            selected_title = st.selectbox("タイトル", TITLE_OPTIONS)
+            
+            if selected_title == "その他（自由入力）":
+                event_title = st.text_input("タイトルを入力してください")
+            else:
+                event_title = selected_title
+                
             start_date = st.date_input("日付")
             
-            # Moved list outside to reuse it later in the edit form
             shipping_options = ["通常発送", "自社都合追加発送", "他社都合追加発送", "緊急発送", "ハンドキャリー", "その他（e.g. 先方が受け取りに来る場合）"]
             shipping_type = st.selectbox("発送方法", shipping_options)
             
@@ -66,8 +98,8 @@ if check_password():
             if submit_btn:
                 if event_title:
                     event_data = {
-                        "action": "add", # NEW: Tell Apps Script what to do
-                        "ID": str(uuid.uuid4()), # NEW: Create a random, unique ID
+                        "action": "add", 
+                        "ID": str(uuid.uuid4()), 
                         "Title": event_title,
                         "Start Date": str(start_date),
                         "Shipping Type": shipping_type,
@@ -80,20 +112,18 @@ if check_password():
                         
                     if response.status_code == 200 and response.json().get("status") == "success":
                         st.success("発送件を追加しました！")
-                        fetch_calendar_data.clear()
+                        fetch_database_data.clear()
                         st.rerun()
                     else:
                         st.error("エラーが起こりました。もう一度お試しください。")
                 else:
                     st.warning("タイトルを入力してください。")
 
-
     # ==========================================
-    # 2. FETCH DATA & DISPLAY CALENDAR
+    # 2. CALENDAR DISPLAY & EDITING
     # ==========================================
     @st.fragment
     def show_calendar():
-        sheet_data = fetch_calendar_data()
         calendar_events = []
         for row in sheet_data:
             if row.get("Title") and row.get("Start Date"):
@@ -104,7 +134,7 @@ if check_password():
                     "backgroundColor": color,
                     "borderColor": color,
                     "extendedProps": {
-                        "ID": row.get("ID", ""), # NEW: Pull the ID from the sheet
+                        "ID": row.get("ID", ""), 
                         "Title": row.get("Title", "N/A"),
                         "Shipping Type": row.get("Shipping Type", "N/A"),
                         "PIC": row.get("PIC", "N/A"),
@@ -132,9 +162,7 @@ if check_password():
             options=calendar_options, 
             custom_css=custom_css
         )
-        
 
-        # --- NEW: Display event details if an event is clicked ---
         if cal_state.get("eventClick"):
             st.divider()
             st.subheader("🔍 詳細 / 編集 (Details & Edit)")
@@ -143,7 +171,6 @@ if check_password():
             props = clicked_event["extendedProps"]
             event_id = props.get("ID")
             
-            # View Mode
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown(f"**タイトル:** {props.get('Title')}")
@@ -153,16 +180,25 @@ if check_password():
                 st.markdown(f"**担当者:** {props.get('PIC')}")
                 st.markdown(f"**発送件数:** {props.get('Item Count')}")
 
-            # Edit Mode (Hidden in an expander)
-            # Only allow editing if the event actually has an ID (older events might not have one yet!)
             if event_id:
                 with st.expander("✏️ この予定を編集・削除する (Edit / Delete)"):
                     with st.form("edit_event_form"):
                         
-                        # Pre-fill the form with the existing data
-                        edit_title = st.text_input("タイトル", value=props.get("Title"))
+                        current_title = props.get("Title")
+                        if current_title in TITLE_OPTIONS:
+                            default_title_index = TITLE_OPTIONS.index(current_title)
+                            default_custom_title = ""
+                        else:
+                            default_title_index = TITLE_OPTIONS.index("その他（自由入力）")
+                            default_custom_title = current_title 
+
+                        edit_selected_title = st.selectbox("タイトル", TITLE_OPTIONS, index=default_title_index)
                         
-                        # Re-parse date for the date_input widget
+                        if edit_selected_title == "その他（自由入力）":
+                            edit_title = st.text_input("タイトルを入力してください", value=default_custom_title)
+                        else:
+                            edit_title = edit_selected_title
+                        
                         try:
                             parsed_date = datetime.strptime(clicked_event['start'].split('T')[0], "%Y-%m-%d").date()
                         except:
@@ -171,7 +207,6 @@ if check_password():
                         
                         shipping_options = ["通常発送", "自社都合追加発送", "他社都合追加発送", "緊急発送", "ハンドキャリー", "その他（e.g. 先方が受け取りに来る場合）"]
                         
-                        # Try to find the existing index, default to 0 if it changed
                         try:
                             default_shipping_index = shipping_options.index(props.get("Shipping Type"))
                         except ValueError:
@@ -180,7 +215,6 @@ if check_password():
                         edit_shipping = st.selectbox("発送方法", shipping_options, index=default_shipping_index)
                         edit_pic = st.text_input("担当者", value=props.get("PIC"))
                         
-                        # Clean item count, ensure it's an int
                         try:
                             default_count = int(props.get("Item Count"))
                         except:
@@ -205,7 +239,7 @@ if check_password():
                             }
                             with st.spinner("更新中..."):
                                 requests.post(SCRIPT_URL, json=update_data)
-                            fetch_calendar_data.clear()
+                            fetch_database_data.clear()
                             st.rerun()
                             
                         if submit_delete:
@@ -215,7 +249,7 @@ if check_password():
                             }
                             with st.spinner("削除中..."):
                                 requests.post(SCRIPT_URL, json=delete_data)
-                            fetch_calendar_data.clear()
+                            fetch_database_data.clear()
                             st.rerun()
             else:
                 st.warning("⚠️ このイベントはIDがないため編集できません (古いデータです)。")

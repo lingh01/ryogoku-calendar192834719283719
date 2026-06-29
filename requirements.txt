@@ -4,3 +4,7 @@ requests
 pandas
 plotly
 streamlit
+base64
+tempfile
+os
+fpdf

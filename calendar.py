@@ -330,25 +330,33 @@ def show_main_dashboard():
             st.info("データがまだありません。")
 
 
+def show_pdf(file_path):
+    with open(file_path, "rb") as f:
+        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
+    st.markdown(pdf_display, unsafe_allow_html=True)
+
+def add_step():
+    # We use uuid to give each block a unique key for Streamlit widgets
+    st.session_state.blocks.append({
+        'id': str(uuid.uuid4()), 
+        'type': 'step'
+    })
+
+def add_table():
+    st.session_state.blocks.append({
+        'id': str(uuid.uuid4()), 
+        'type': 'table',
+        # Provide a default empty dataframe
+        'data': pd.DataFrame([{"Column 1": "", "Column 2": ""}])
+    })
+
 def show_blog():
     # 1. Initialize the session state to hold our blocks
     if 'blocks' not in st.session_state:
         st.session_state.blocks = []
 
-    def add_step():
-        # We use uuid to give each block a unique key for Streamlit widgets
-        st.session_state.blocks.append({
-            'id': str(uuid.uuid4()), 
-            'type': 'step'
-        })
-
-    def add_table():
-        st.session_state.blocks.append({
-            'id': str(uuid.uuid4()), 
-            'type': 'table',
-            # Provide a default empty dataframe
-            'data': pd.DataFrame([{"Column 1": "", "Column 2": ""}])
-        })
+    
 
     st.title("マニュアル作成ツール (Manual Maker)")
     st.markdown("---")
@@ -405,17 +413,105 @@ def show_blog():
             )
             st.markdown("---")
 
+    st.subheader("出力")
+
+    if st.button("📄 マニュアルをPDF化する", use_container_width=True):
+        # 1. Initialize A4 PDF
+        pdf = FPDF(orientation="P", unit="mm", format="A4")
+        pdf.add_page()
+        
+        # 2. Setup Japanese Font (MUST have this file in your repo!)
+        # Change 'NotoSansJP-Regular.ttf' to whatever font file you download
+        try:
+            pdf.add_font("NotoSansJP", style="", fname="NotoSansJP-VariableFont_wght.ttf.ttf")
+            pdf.set_font("NotoSansJP", size=12)
+        except RuntimeError:
+            st.error("Font file missing! Please add 'NotoSansJP-Regular.ttf' to your folder.")
+            st.stop()
+
+        # Title
+        pdf.set_font("NotoSansJP", size=18)
+        pdf.cell(0, 10, txt="コンテナ入れルールマニュアル", ln=True, align="C")
+        pdf.ln(10)
+
+        # 3. Loop through blocks and print to PDF
+        step_counter = 1
+        
+        for block in st.session_state.blocks:
+            block_id = block['id']
+            
+            if block['type'] == 'step':
+                # Get text from session state (Streamlit saves widget values in st.session_state using their keys)
+                main_text = st.session_state.get(f"main_{block_id}", "")
+                sub_text = st.session_state.get(f"sub_{block_id}", "")
+                uploaded_img = st.session_state.get(f"img_{block_id}", None)
+
+                # Write Step Header & Main Text
+                pdf.set_font("NotoSansJP", size=14)
+                pdf.cell(0, 10, txt=f"Step {step_counter}: {main_text}", ln=True)
+                
+                # Write Sub-text if it exists
+                if sub_text:
+                    pdf.set_font("NotoSansJP", size=10)
+                    # multi_cell handles text wrapping automatically
+                    pdf.multi_cell(0, 6, txt=sub_text)
+                
+                # Handle Image if it exists
+                if uploaded_img is not None:
+                    # We must save the uploaded file temporarily so FPDF can read it
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+                        tmp_file.write(uploaded_img.getvalue())
+                        tmp_file_path = tmp_file.name
+                    
+                    # Insert image (width 100mm)
+                    pdf.image(tmp_file_path, w=100)
+                    os.remove(tmp_file_path) # Clean up temp file
+                    
+                pdf.ln(5) # Add a little space after the step
+                step_counter += 1
+
+            elif block['type'] == 'table':
+                df = block['data']
+                pdf.set_font("NotoSansJP", size=10)
+                
+                # Calculate column width dynamically based on A4 width (approx 190mm usable)
+                num_columns = len(df.columns)
+                if num_columns > 0:
+                    col_width = 190 / num_columns
+                    
+                    # Print Table Headers
+                    for col_name in df.columns:
+                        pdf.cell(col_width, 8, txt=str(col_name), border=1, align="C")
+                    pdf.ln()
+                    
+                    # Print Table Rows
+                    for index, row in df.iterrows():
+                        for col_name in df.columns:
+                            cell_value = str(row[col_name]) if pd.notna(row[col_name]) else ""
+                            pdf.cell(col_width, 8, txt=cell_value, border=1, align="C")
+                        pdf.ln()
+                
+                pdf.ln(10) # Add space after table
+
+        # 4. Save and Display
+        pdf_filename = "generated_manual.pdf"
+        pdf.output(pdf_filename)
+        
+        st.success("PDF作成完了！")
+        show_pdf(pdf_filename)
+
     # 3. The Add Buttons at the bottom
     col1, col2 = st.columns(2)
     with col1:
         st.button("➕ ステップ追加", on_click=add_step, use_container_width=True)
     with col2:
         st.button("➕ 表の追加", on_click=add_table, use_container_width=True)
+
 # --- ROUTER AND SECURITY CONTROL ---
 if check_password():
     # Define your pages programmatically
     dashboard_page = st.Page(show_main_dashboard, title="発送カレンダー", icon="📅", default=True)
-    blog_page = st.Page(show_blog, title="Example 1", icon="🚀", url_path="example1")
+    blog_page = st.Page(show_blog, title="デジタルマニュアル", icon="🚀", url_path="example1")
     
     # Initialize and execute the navigation sidebar
     pg = st.navigation([dashboard_page, blog_page])

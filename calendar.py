@@ -367,7 +367,7 @@ def show_blog():
 
     
 
-    st.title("マニュアル作成ツール (Manual Maker)")
+    st.title("マニュアル作成ツール")
     st.markdown("---")
 
     # 2. Loop through and render the blocks

@@ -1,10 +1,6 @@
 streamlit-calendar
-datetime
 requests
 pandas
 plotly
 streamlit
-base64
-tempfile
-os
-fpdf
+fpdf2

@@ -412,7 +412,14 @@ def show_blog():
                 use_container_width=True
             )
             st.markdown("---")
-
+    
+    # 3. The Add Buttons at the bottom
+    col1, col2 = st.columns(2)
+    with col1:
+        st.button("➕ ステップ追加", on_click=add_step, use_container_width=True)
+    with col2:
+        st.button("➕ 表の追加", on_click=add_table, use_container_width=True)
+    
     st.subheader("出力")
 
     if st.button("📄 マニュアルをPDF化する", use_container_width=True):
@@ -499,13 +506,6 @@ def show_blog():
         
         st.success("PDF作成完了！")
         show_pdf(pdf_filename)
-
-    # 3. The Add Buttons at the bottom
-    col1, col2 = st.columns(2)
-    with col1:
-        st.button("➕ ステップ追加", on_click=add_step, use_container_width=True)
-    with col2:
-        st.button("➕ 表の追加", on_click=add_table, use_container_width=True)
 
 # --- ROUTER AND SECURITY CONTROL ---
 if check_password():

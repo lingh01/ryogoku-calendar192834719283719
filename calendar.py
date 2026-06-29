@@ -488,39 +488,42 @@ def show_blog():
                 
                 # Handle Image if it exists
                 # Handle Image if it exists
+                # Handle Image if it exists
                 if uploaded_img is not None:
                     from PIL import Image
                     
                     try:
-                        # Open the image using Pillow to normalize its structure
+                        # 1. Open image with Pillow to handle format safely
                         img = Image.open(uploaded_img)
                         
-                        # If the image has an alpha channel (transparency), paste it onto a white background
+                        # 2. Flatten transparency layers to avoid silent white-out errors
                         if img.mode == "RGBA":
                             background = Image.new("RGB", img.size, (255, 255, 255))
-                            background.paste(img, mask=img.split()[3]) # Use alpha channel as the mask
+                            background.paste(img, mask=img.split()[3])
                             img = background
                         else:
                             img = img.convert("RGB")
                         
-                        # Save the normalized image to a temporary JPEG file matching the suffix
+                        # 3. Save to a temporary JPEG file
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
                             img.save(tmp_file.name, format="JPEG")
                             tmp_file_path = tmp_file.name
                         
-                        # Insert image (width 100mm)
-                        pdf.image(tmp_file_path, w=100)
+                        # 4. Insert image with an EXPLICIT X coordinate position
+                        # OPTION A: Left-aligned with text margins
+                        pdf.image(tmp_file_path, x=pdf.l_margin, w=100)
+                        
+                        # OPTION B: Center it on the A4 page instead (Uncomment below if preferred)
+                        # pdf.image(tmp_file_path, x=(210 - 100) / 2, w=100)
+                        
                         os.remove(tmp_file_path) # Clean up temp file
                         
                     except Exception as img_err:
                         st.error(f"画像の埋め込み中にエラーが発生しました: {img_err}")
                     
-                pdf.ln(5) # Add a little space after the step
+                pdf.ln(5) # Add space after the step
                 step_counter += 1
-                    
-                pdf.ln(5) # Add a little space after the step
-                step_counter += 1
-
+                
             elif block['type'] == 'table':
                 df = block['data']
                 pdf.set_font("NotoSansJP", size=10)

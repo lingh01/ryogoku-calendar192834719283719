@@ -299,7 +299,7 @@ if check_password():
                 daily_data.set_index("Date", inplace=True)
                 
                 # 4. Draw the graph!
-                st.bar_chart(daily_data)
+                st.line_chart(daily_data)
             else:
                 st.error("スプレッドシートの列名が '日付' と '件数' ではありません。")
         else:

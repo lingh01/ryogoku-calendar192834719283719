@@ -302,6 +302,10 @@ if check_password():
                 daily_data = df.groupby("Date")["Count"].sum().reset_index()
                 daily_data.set_index("Date", inplace=True)
                 
+                # --- NEW: Convert the index to strings right before charting ---
+                # This forces Streamlit to treat the dates as discrete text labels,
+                # skipping empty days and preventing the hour-by-hour zooming.
+                daily_data.index = daily_data.index.astype(str)
                 # 4. Draw the graph!
                 st.line_chart(daily_data)
             else:

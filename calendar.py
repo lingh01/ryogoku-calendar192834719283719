@@ -519,10 +519,15 @@ def show_blog():
         
         # 2. ACTUALLY BUILD AND SAVE THE FILE (Crucial missing step!)
         pdf.output(pdf_filepath)
+        
+        # READ THE PDF AND CONVERT TO BASE64
+        with open(pdf_filepath, "rb") as f:
+            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+            
         st.success("PDF作成完了！")
         
-        # 3. Create a link to open it in a new tab
-        pdf_url = f"/app/static/{unique_filename}"
+        # 3. USE BASE64 INSTEAD OF THE FILE PATH
+        pdf_url = f"data:application/pdf;base64,{base64_pdf}"
         
         # We construct a styled HTML link that looks exactly like a Streamlit button
         button_html = f"""

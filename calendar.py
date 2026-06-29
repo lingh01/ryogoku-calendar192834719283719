@@ -414,13 +414,21 @@ def show_blog():
 
             # The actual data editor
             # We save the output back to block['data'] so user edits are kept!
-            block['data'] = st.data_editor(
-                block['data'], 
-                num_rows="dynamic", 
-                key=f"table_{block_id}", 
-                use_container_width=True
-            )
-            st.markdown("---")
+            # --- NEW: UI to Rename Existing Columns ---
+            with st.expander("✏️ 既存の列名を変更"):
+                rename_dict = {}
+                for col_name in block['data'].columns:
+                    # Create a text input for each existing column
+                    new_name = st.text_input(f"'{col_name}' の新しい名前:", value=col_name, key=f"rename_{block_id}_{col_name}")
+                    rename_dict[col_name] = new_name
+                    
+                if st.button("列名を更新", key=f"update_cols_btn_{block_id}"):
+                    # Apply the new names to the dataframe and refresh
+                    block['data'] = block['data'].rename(columns=rename_dict)
+                    st.rerun()
+            # ------------------------------------------
+
+            # The actual data editor
     
     # 3. The Add Buttons at the bottom
     col1, col2 = st.columns(2)
@@ -473,15 +481,36 @@ def show_blog():
                     pdf.multi_cell(0, 6, txt=sub_text)
                 
                 # Handle Image if it exists
+                # Handle Image if it exists
                 if uploaded_img is not None:
-                    # We must save the uploaded file temporarily so FPDF can read it
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
-                        tmp_file.write(uploaded_img.getvalue())
-                        tmp_file_path = tmp_file.name
+                    from PIL import Image
                     
-                    # Insert image (width 100mm)
-                    pdf.image(tmp_file_path, w=100)
-                    os.remove(tmp_file_path) # Clean up temp file
+                    try:
+                        # Open the image using Pillow to normalize its structure
+                        img = Image.open(uploaded_img)
+                        
+                        # If the image has an alpha channel (transparency), paste it onto a white background
+                        if img.mode == "RGBA":
+                            background = Image.new("RGB", img.size, (255, 255, 255))
+                            background.paste(img, mask=img.split()[3]) # Use alpha channel as the mask
+                            img = background
+                        else:
+                            img = img.convert("RGB")
+                        
+                        # Save the normalized image to a temporary JPEG file matching the suffix
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+                            img.save(tmp_file.name, format="JPEG")
+                            tmp_file_path = tmp_file.name
+                        
+                        # Insert image (width 100mm)
+                        pdf.image(tmp_file_path, w=100)
+                        os.remove(tmp_file_path) # Clean up temp file
+                        
+                    except Exception as img_err:
+                        st.error(f"画像の埋め込み中にエラーが発生しました: {img_err}")
+                    
+                pdf.ln(5) # Add a little space after the step
+                step_counter += 1
                     
                 pdf.ln(5) # Add a little space after the step
                 step_counter += 1

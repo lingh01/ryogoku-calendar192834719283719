@@ -7,6 +7,7 @@ from fpdf import FPDF
 import base64
 import tempfile
 import os
+from streamlit_pdf_viewer import pdf_viewer
 import plotly.express as px  # <-- ADD THIS LINE
 import uuid  # NEW: We need this to generate unique IDs for each row
 
@@ -335,10 +336,8 @@ def show_main_dashboard():
 
 
 def show_pdf(file_path):
-    with open(file_path, "rb") as f:
-        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
-    st.markdown(pdf_display, unsafe_allow_html=True)
+    # This library handles the rendering safely without using iframes
+    pdf_viewer(file_path, height=800)
 
 def add_step():
     # We use uuid to give each block a unique key for Streamlit widgets

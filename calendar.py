@@ -364,9 +364,9 @@ def show_blog():
             st.subheader(f"Step {step_counter}")
             
             # Unique keys are required for Streamlit widgets inside loops
-            st.text_input("メインテキスト (Main Text)", key=f"main_{block_id}")
-            st.text_area("補足説明 (Sub-text - Optional)", key=f"sub_{block_id}")
-            st.file_uploader("画像アップロード (Image - Optional)", type=['png', 'jpg', 'jpeg'], key=f"img_{block_id}")
+            st.text_input("本文（必須）", key=f"main_{block_id}")
+            st.text_area("補足説明（任意）", key=f"sub_{block_id}")
+            st.file_uploader("画像アップロード（任意）", type=['png', 'jpg', 'jpeg'], key=f"img_{block_id}")
             
             step_counter += 1
             st.markdown("---")
@@ -374,8 +374,35 @@ def show_blog():
         # Render a Table
         elif block['type'] == 'table':
             st.subheader("表 (Table)")
-            # st.data_editor lets the user add/delete rows dynamically
-            st.data_editor(block['data'], num_rows="dynamic", key=f"table_{block_id}", use_container_width=True)
+            
+            # --- NEW: Add Column UI ---
+            # We use columns to put the input box and button side-by-side
+            col_input, col_btn = st.columns([3, 1])
+            
+            with col_input:
+                # Input for the new column name
+                new_col_name = st.text_input("新しい列名 (New Column Name)", key=f"col_input_{block_id}")
+                
+            with col_btn:
+                # We add a bit of vertical space so the button aligns with the text box
+                st.write("") 
+                st.write("")
+                if st.button("➕ 列を追加 (Add Column)", key=f"add_col_btn_{block_id}", use_container_width=True):
+                    if new_col_name:
+                        # Add the new column to the dataframe with empty strings
+                        block['data'][new_col_name] = ""
+                        # Refresh the app immediately to show the new column
+                        st.rerun() 
+            # --------------------------
+
+            # The actual data editor
+            # We save the output back to block['data'] so user edits are kept!
+            block['data'] = st.data_editor(
+                block['data'], 
+                num_rows="dynamic", 
+                key=f"table_{block_id}", 
+                use_container_width=True
+            )
             st.markdown("---")
 
     # 3. The Add Buttons at the bottom

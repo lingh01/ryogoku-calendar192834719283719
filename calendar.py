@@ -530,25 +530,43 @@ def show_blog():
         pdf_url = f"data:application/pdf;base64,{base64_pdf}"
         
         # We construct a styled HTML link that looks exactly like a Streamlit button
-        button_html = f"""
-        <a href="{pdf_url}" target="_blank" style="text-decoration: none;">
-            <div style="
-                background-color: #FF4B4B;
-                color: white;
-                padding: 10px 20px;
-                text-align: center;
-                border-radius: 8px;
-                font-weight: bold;
-                cursor: pointer;
-                margin-top: 10px;
-            ">
-                    新しいタブでマニュアルを開いて印刷する
-            </div>
-        </a>
+        # We use a tiny JavaScript script to convert the Base64 to a Blob URL,
+        # which browsers ALLOW to be opened safely in a new tab!
+        html_code = f"""
+        <script>
+        function openPDF() {{
+            const byteCharacters = atob("{base64_pdf}");
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {{
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }}
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], {{type: "application/pdf"}});
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, "_blank");
+        }}
+        </script>
+        
+        <button onclick="openPDF()" style="
+            background-color: #FF4B4B;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            border: none;
+            width: 100%;
+            font-family: sans-serif;
+            font-size: 16px;
+        ">
+            新しいタブでマニュアルを開いて印刷する
+        </button>
         """
         
-        # Display the HTML button link
-        st.markdown(button_html, unsafe_allow_html=True)
+        # Display using Streamlit's native HTML component (allows JS to run)
+        st.components.v1.html(html_code, height=70)
 
 # --- ROUTER AND SECURITY CONTROL ---
 if check_password():

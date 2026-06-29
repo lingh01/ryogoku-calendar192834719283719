@@ -330,17 +330,66 @@ def show_main_dashboard():
             st.info("データがまだありません。")
 
 
-def show_example1():
-    st.title("Example 1 Page 🚀")
-    st.write("Welcome to your new window/page!")
-    # Add any code, forms, or data specific to the /example1 page here
+def show_blog():
+    # 1. Initialize the session state to hold our blocks
+    if 'blocks' not in st.session_state:
+        st.session_state.blocks = []
 
+    def add_step():
+        # We use uuid to give each block a unique key for Streamlit widgets
+        st.session_state.blocks.append({
+            'id': str(uuid.uuid4()), 
+            'type': 'step'
+        })
+
+    def add_table():
+        st.session_state.blocks.append({
+            'id': str(uuid.uuid4()), 
+            'type': 'table',
+            # Provide a default empty dataframe
+            'data': pd.DataFrame([{"Column 1": "", "Column 2": ""}])
+        })
+
+    st.title("マニュアル作成ツール (Manual Maker)")
+    st.markdown("---")
+
+    # 2. Loop through and render the blocks
+    step_counter = 1 # Keep track of the step numbers
+
+    for block in st.session_state.blocks:
+        block_id = block['id']
+        
+        # Render a Step
+        if block['type'] == 'step':
+            st.subheader(f"Step {step_counter}")
+            
+            # Unique keys are required for Streamlit widgets inside loops
+            st.text_input("メインテキスト (Main Text)", key=f"main_{block_id}")
+            st.text_area("補足説明 (Sub-text - Optional)", key=f"sub_{block_id}")
+            st.file_uploader("画像アップロード (Image - Optional)", type=['png', 'jpg', 'jpeg'], key=f"img_{block_id}")
+            
+            step_counter += 1
+            st.markdown("---")
+
+        # Render a Table
+        elif block['type'] == 'table':
+            st.subheader("表 (Table)")
+            # st.data_editor lets the user add/delete rows dynamically
+            st.data_editor(block['data'], num_rows="dynamic", key=f"table_{block_id}", use_container_width=True)
+            st.markdown("---")
+
+    # 3. The Add Buttons at the bottom
+    col1, col2 = st.columns(2)
+    with col1:
+        st.button("➕ Add Step (ステップ追加)", on_click=add_step, use_container_width=True)
+    with col2:
+        st.button("➕ Add Table (表の追加)", on_click=add_table, use_container_width=True)
 # --- ROUTER AND SECURITY CONTROL ---
 if check_password():
     # Define your pages programmatically
     dashboard_page = st.Page(show_main_dashboard, title="発送カレンダー", icon="📅", default=True)
-    example1_page = st.Page(show_example1, title="Example 1", icon="🚀", url_path="example1")
+    blog_page = st.Page(show_blog, title="Example 1", icon="🚀", url_path="example1")
     
     # Initialize and execute the navigation sidebar
-    pg = st.navigation([dashboard_page, example1_page])
+    pg = st.navigation([dashboard_page, blog_page])
     pg.run()

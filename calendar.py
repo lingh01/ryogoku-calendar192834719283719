@@ -28,7 +28,7 @@ def check_password():
         return True
 
 # --- MAIN APP EXECUTION ---
-if check_password():
+def show_main_dashboard():
     st.title("発送件カレンダー 📅")
     
     # ==========================================
@@ -328,3 +328,19 @@ if check_password():
                 st.error("スプレッドシートの列名が '日付' と '件数' ではありません。")
         else:
             st.info("データがまだありません。")
+
+
+def show_example1():
+    st.title("Example 1 Page 🚀")
+    st.write("Welcome to your new window/page!")
+    # Add any code, forms, or data specific to the /example1 page here
+
+# --- ROUTER AND SECURITY CONTROL ---
+if check_password():
+    # Define your pages programmatically
+    dashboard_page = st.Page(show_main_dashboard, title="発送カレンダー", icon="📅", default=True)
+    example1_page = st.Page(show_example1, title="Example 1", icon="🚀", url_path="example1")
+    
+    # Initialize and execute the navigation sidebar
+    pg = st.navigation([dashboard_page, example1_page])
+    pg.run()

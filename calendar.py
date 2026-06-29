@@ -296,7 +296,8 @@ if check_password():
             # 2. Clean up the columns so Streamlit can chart them properly
             # (Assuming your headers in the sheet are exactly "Date" and "Count")
             if "日付" in df.columns and "件数" in df.columns:
-                df["Date"] = pd.to_datetime(df["日付"]).dt.date
+                # Force read as UTC, convert to Japan time (+9 hours), then extract the date
+                df["Date"] = pd.to_datetime(df["日付"], utc=True).dt.tz_convert("Asia/Tokyo").dt.date
                 df["Count"] = pd.to_numeric(df["件数"], errors="coerce").fillna(0)
                 
                 # 3. Group by date in case there are multiple entries per day

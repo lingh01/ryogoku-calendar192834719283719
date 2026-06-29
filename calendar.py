@@ -428,6 +428,12 @@ def show_blog():
                     st.rerun()
             # ------------------------------------------
 
+            block['data'] = st.data_editor(
+                block['data'], 
+                num_rows="dynamic", 
+                key=f"table_{block_id}", 
+                use_container_width=True
+            )
             # The actual data editor
     
     # 3. The Add Buttons at the bottom

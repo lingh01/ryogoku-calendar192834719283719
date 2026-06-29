@@ -381,13 +381,13 @@ def show_blog():
             
             with col_input:
                 # Input for the new column name
-                new_col_name = st.text_input("新しい列名 (New Column Name)", key=f"col_input_{block_id}")
+                new_col_name = st.text_input("新しい列名", key=f"col_input_{block_id}")
                 
             with col_btn:
                 # We add a bit of vertical space so the button aligns with the text box
                 st.write("") 
                 st.write("")
-                if st.button("➕ 列を追加 (Add Column)", key=f"add_col_btn_{block_id}", use_container_width=True):
+                if st.button("➕ 列を追加 ", key=f"add_col_btn_{block_id}", use_container_width=True):
                     if new_col_name:
                         # Add the new column to the dataframe with empty strings
                         block['data'][new_col_name] = ""

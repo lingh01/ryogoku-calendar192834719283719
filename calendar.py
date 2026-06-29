@@ -48,6 +48,8 @@ if check_password():
     db_data = fetch_database_data()
     sheet_data = db_data.get("events", [])
     fetched_titles = db_data.get("titles", [])
+
+    packaging_data = db_data.get("packaging", [])
     
     # Build our title options dynamically from the spreadsheet
     TITLE_OPTIONS = fetched_titles + ["その他（自由入力）"]
@@ -281,25 +283,24 @@ if check_password():
 
     with tab2:
         st.subheader("日別梱包数")
-    
-    # Paste your published CSV link here
-    SHEET_CSV_URL = "YOUR_PUBLISHED_CSV_LINK_HERE" 
-    
-    try:
-        # Read the data from the Google Sheet
-        df = pd.read_csv(SHEET_CSV_URL)
         
-        # Clean up the columns so Streamlit can chart them properly
-        # Make sure these names exactly match your Google Sheet headers!
-        df["Date"] = pd.to_datetime(df["Date"]).dt.date
-        df["Count"] = pd.to_numeric(df["Count"], errors="coerce").fillna(0)
-        
-        # Group by date (just in case they put multiple entries for one day)
-        daily_data = df.groupby("Date")["Count"].sum().reset_index()
-        daily_data.set_index("Date", inplace=True)
-        
-        # Draw the graph
-        st.bar_chart(daily_data)
-        
-    except Exception as e:
-        st.info("データがまだありません、または読み込めません。")
+        if packaging_data:
+            # 1. Convert the JSON payload directly into a Pandas DataFrame
+            df = pd.DataFrame(packaging_data)
+            
+            # 2. Clean up the columns so Streamlit can chart them properly
+            # (Assuming your headers in the sheet are exactly "Date" and "Count")
+            if "日付" in df.columns and "件数" in df.columns:
+                df["Date"] = pd.to_datetime(df["日付"]).dt.date
+                df["Count"] = pd.to_numeric(df["件数"], errors="coerce").fillna(0)
+                
+                # 3. Group by date in case there are multiple entries per day
+                daily_data = df.groupby("Date")["Count"].sum().reset_index()
+                daily_data.set_index("Date", inplace=True)
+                
+                # 4. Draw the graph!
+                st.bar_chart(daily_data)
+            else:
+                st.error("スプレッドシートの列名が '日付' と '件数' ではありません。")
+        else:
+            st.info("データがまだありません。")

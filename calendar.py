@@ -368,6 +368,8 @@ def show_blog():
     
 
     st.title("マニュアル作成ツール")
+    # ADD THIS LINE:
+    manual_title = st.text_input("マニュアルのタイトル", value="マニュアル", key="manual_title_input")
     st.markdown("---")
 
     # 2. Loop through and render the blocks
@@ -459,9 +461,10 @@ def show_blog():
             st.error("Font file missing! Please add 'NotoSansJP-Regular.ttf' to your folder.")
             st.stop()
 
-        # Title
+        # Title (Now dynamic!)
         pdf.set_font("NotoSansJP", size=18)
-        pdf.cell(0, 10, txt="コンテナ入れルールマニュアル", ln=True, align="C")
+        # We use the variable 'manual_title' from the top of the function
+        pdf.cell(0, 10, txt=manual_title, ln=True, align="C")
         pdf.ln(10)
 
         # 3. Loop through blocks and print to PDF
@@ -523,7 +526,7 @@ def show_blog():
                     
                 pdf.ln(5) # Add space after the step
                 step_counter += 1
-                
+
             elif block['type'] == 'table':
                 df = block['data']
                 pdf.set_font("NotoSansJP", size=10)

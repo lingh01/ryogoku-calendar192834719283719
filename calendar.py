@@ -283,6 +283,10 @@ if check_password():
 
     with tab2:
         st.subheader("日別梱包数")
+
+        if st.button("🔄 データを更新"):
+            fetch_database_data.clear()
+            st.rerun()
         
         if packaging_data:
             # 1. Convert the JSON payload directly into a Pandas DataFrame

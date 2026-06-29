@@ -335,6 +335,7 @@ def show_main_dashboard():
             st.info("データがまだありません。")
 
 
+
 def show_pdf(file_path):
     # This library handles the rendering safely without using iframes
     pdf_viewer(file_path, height=800)
@@ -355,6 +356,11 @@ def add_table():
     })
 
 def show_blog():
+
+    # 1. Make sure the 'static' folder exists on the server
+    if not os.path.exists("static"):
+        os.makedirs("static")
+
     # 1. Initialize the session state to hold our blocks
     if 'blocks' not in st.session_state:
         st.session_state.blocks = []
@@ -372,7 +378,7 @@ def show_blog():
         
         # Render a Step
         if block['type'] == 'step':
-            st.subheader(f"Step {step_counter}")
+            st.subheader(f"ステップ {step_counter}")
             
             # Unique keys are required for Streamlit widgets inside loops
             st.text_input("本文（必須）", key=f"main_{block_id}")
@@ -458,7 +464,7 @@ def show_blog():
 
                 # Write Step Header & Main Text
                 pdf.set_font("NotoSansJP", size=14)
-                pdf.cell(0, 10, txt=f"Step {step_counter}: {main_text}", ln=True)
+                pdf.cell(0, 10, txt=f"{step_counter}. {main_text}", ln=True)
                 
                 # Write Sub-text if it exists
                 if sub_text:
@@ -503,12 +509,38 @@ def show_blog():
                 
                 pdf.ln(10) # Add space after table
 
-        # 4. Save and Display
-        pdf_filename = "generated_manual.pdf"
-        pdf.output(pdf_filename)
-        
-        st.success("PDF作成完了！")
-        show_pdf(pdf_filename)
+                # 3. Create a totally unique filename inside the static folder
+                unique_filename = f"manual_{uuid.uuid4()}.pdf"
+                pdf_filepath = f"static/{unique_filename}"
+                
+                # 4. Output the PDF to that specific path
+                st.success("PDF作成完了！")
+                show_pdf(pdf_filename)
+                
+                # 5. Create a link to open it in a new tab
+                # Streamlit maps the 'static' folder to the '/app/static/' URL path
+                pdf_url = f"/app/static/{unique_filename}"
+                
+                # We construct a styled HTML link that looks exactly like a Streamlit button
+                button_html = f"""
+                <a href="{pdf_url}" target="_blank" style="text-decoration: none;">
+                    <div style="
+                        background-color: #FF4B4B;
+                        color: white;
+                        padding: 10px 20px;
+                        text-align: center;
+                        border-radius: 8px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        margin-top: 10px;
+                    ">
+                         新しいタブでマニュアルを開いて印刷する
+                    </div>
+                </a>
+                """
+                
+                # Display the HTML button link
+                st.markdown(button_html, unsafe_allow_html=True)
 
 # --- ROUTER AND SECURITY CONTROL ---
 if check_password():

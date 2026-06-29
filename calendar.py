@@ -513,9 +513,9 @@ def show_blog():
             unique_filename = f"manual_{uuid.uuid4()}.pdf"
             pdf_filepath = f"static/{unique_filename}"
             
-            # 4. Output the PDF to that specific path
-            st.success("PDF作成完了！")
-            show_pdf(unique_filename)
+            # # 4. Output the PDF to that specific path
+            # st.success("PDF作成完了！")
+            # show_pdf(unique_filename)
             
             # 5. Create a link to open it in a new tab
             # Streamlit maps the 'static' folder to the '/app/static/' URL path

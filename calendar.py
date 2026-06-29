@@ -3,6 +3,10 @@ from streamlit_calendar import calendar
 from datetime import datetime
 import requests
 import pandas as pd
+from fpdf import FPDF
+import base64
+import tempfile
+import os
 import plotly.express as px  # <-- ADD THIS LINE
 import uuid  # NEW: We need this to generate unique IDs for each row
 

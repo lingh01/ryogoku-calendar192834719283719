@@ -2,3 +2,5 @@ streamlit-calendar
 datetime
 requests
 pandas
+plotly
+streamlit

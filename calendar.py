@@ -3,6 +3,7 @@ from streamlit_calendar import calendar
 from datetime import datetime
 import requests
 import pandas as pd
+import plotly.express as px  # <-- ADD THIS LINE
 import uuid  # NEW: We need this to generate unique IDs for each row
 
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhDt08hJDuXwJFYxQ5BXkhlsK9xpl3ClmR22mL-mUFLe9o8Sf_G0Hix1TyNmyNXYvs/exec"
@@ -307,7 +308,21 @@ if check_password():
                 # so it still prevents that weird hour-by-hour zooming!
                 daily_data.index = daily_data.index.map(lambda d: f"{d.month}月{d.day}日")
                 # 4. Draw the graph!
-                st.line_chart(daily_data)
+                # 4. Draw the graph using Plotly!
+                fig = px.line(
+                    daily_data, 
+                    x=daily_data.index, 
+                    y="Count", 
+                    markers=True, # Adds dots to the data points
+                )
+                
+                # Optional: customize axis labels to match your Japanese text
+                fig.update_layout(
+                    xaxis_title="日付",
+                    yaxis_title="件数"
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.error("スプレッドシートの列名が '日付' と '件数' ではありません。")
         else:

@@ -408,9 +408,9 @@ def show_blog():
     # 3. The Add Buttons at the bottom
     col1, col2 = st.columns(2)
     with col1:
-        st.button("➕ Add Step (ステップ追加)", on_click=add_step, use_container_width=True)
+        st.button("➕ ステップ追加", on_click=add_step, use_container_width=True)
     with col2:
-        st.button("➕ Add Table (表の追加)", on_click=add_table, use_container_width=True)
+        st.button("➕ 表の追加", on_click=add_table, use_container_width=True)
 # --- ROUTER AND SECURITY CONTROL ---
 if check_password():
     # Define your pages programmatically

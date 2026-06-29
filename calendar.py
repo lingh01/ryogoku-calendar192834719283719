@@ -509,38 +509,41 @@ def show_blog():
                 
                 pdf.ln(10) # Add space after table
 
-            # 3. Create a totally unique filename inside the static folder
-            unique_filename = f"manual_{uuid.uuid4()}.pdf"
-            pdf_filepath = f"static/{unique_filename}"
-            
-            # # 4. Output the PDF to that specific path
-            # st.success("PDF作成完了！")
-            # show_pdf(unique_filename)
-            
-            # 5. Create a link to open it in a new tab
-            # Streamlit maps the 'static' folder to the '/app/static/' URL path
-            pdf_url = f"/app/static/{unique_filename}"
-            
-            # We construct a styled HTML link that looks exactly like a Streamlit button
-            button_html = f"""
-            <a href="{pdf_url}" target="_blank" style="text-decoration: none;">
-                <div style="
-                    background-color: #FF4B4B;
-                    color: white;
-                    padding: 10px 20px;
-                    text-align: center;
-                    border-radius: 8px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    margin-top: 10px;
-                ">
-                        新しいタブでマニュアルを開いて印刷する
-                </div>
-            </a>
-            """
-            
-            # Display the HTML button link
-            st.markdown(button_html, unsafe_allow_html=True)
+        # 3. Create a totally unique filename inside the static folder
+        unique_filename = f"manual_{uuid.uuid4()}.pdf"
+        pdf_filepath = f"static/{unique_filename}"
+        
+        # # 4. Output the PDF to that specific path
+        # st.success("PDF作成完了！")
+        # show_pdf(unique_filename)
+        
+        # 2. ACTUALLY BUILD AND SAVE THE FILE (Crucial missing step!)
+        pdf.output(pdf_filepath)
+        st.success("PDF作成完了！")
+        
+        # 3. Create a link to open it in a new tab
+        pdf_url = f"/app/static/{unique_filename}"
+        
+        # We construct a styled HTML link that looks exactly like a Streamlit button
+        button_html = f"""
+        <a href="{pdf_url}" target="_blank" style="text-decoration: none;">
+            <div style="
+                background-color: #FF4B4B;
+                color: white;
+                padding: 10px 20px;
+                text-align: center;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-top: 10px;
+            ">
+                    新しいタブでマニュアルを開いて印刷する
+            </div>
+        </a>
+        """
+        
+        # Display the HTML button link
+        st.markdown(button_html, unsafe_allow_html=True)
 
 # --- ROUTER AND SECURITY CONTROL ---
 if check_password():

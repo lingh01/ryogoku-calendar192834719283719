@@ -434,7 +434,7 @@ def show_blog():
         # 2. Setup Japanese Font (MUST have this file in your repo!)
         # Change 'NotoSansJP-Regular.ttf' to whatever font file you download
         try:
-            pdf.add_font("NotoSansJP", style="", fname="NotoSansJP-VariableFont_wght.ttf.ttf")
+            pdf.add_font("NotoSansJP", style="", fname="NotoSansJP-VariableFont_wght.ttf")
             pdf.set_font("NotoSansJP", size=12)
         except RuntimeError:
             st.error("Font file missing! Please add 'NotoSansJP-Regular.ttf' to your folder.")

@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_calendar import calendar
 from datetime import datetime
 import requests
+import pandas as pd
 import uuid  # NEW: We need this to generate unique IDs for each row
 
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhDt08hJDuXwJFYxQ5BXkhlsK9xpl3ClmR22mL-mUFLe9o8Sf_G0Hix1TyNmyNXYvs/exec"
@@ -271,4 +272,34 @@ if check_password():
             else:
                 st.warning("⚠️ このイベントはIDがないため編集できません (古いデータです)。")
 
-    show_calendar()
+    # ==========================================
+    # 3. TABS: CALENDAR & GRAPH
+    # ==========================================
+    tab1, tab2 = st.tabs(["📅 発送カレンダー ", "📈 進捗グラフ"])
+    with tab1:
+        show_calendar()
+
+    with tab2:
+        st.subheader("日別梱包数")
+    
+    # Paste your published CSV link here
+    SHEET_CSV_URL = "YOUR_PUBLISHED_CSV_LINK_HERE" 
+    
+    try:
+        # Read the data from the Google Sheet
+        df = pd.read_csv(SHEET_CSV_URL)
+        
+        # Clean up the columns so Streamlit can chart them properly
+        # Make sure these names exactly match your Google Sheet headers!
+        df["Date"] = pd.to_datetime(df["Date"]).dt.date
+        df["Count"] = pd.to_numeric(df["Count"], errors="coerce").fillna(0)
+        
+        # Group by date (just in case they put multiple entries for one day)
+        daily_data = df.groupby("Date")["Count"].sum().reset_index()
+        daily_data.set_index("Date", inplace=True)
+        
+        # Draw the graph
+        st.bar_chart(daily_data)
+        
+    except Exception as e:
+        st.info("データがまだありません、または読み込めません。")

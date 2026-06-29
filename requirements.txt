@@ -1,3 +1,4 @@
 streamlit-calendar
 datetime
 requests
+pandas

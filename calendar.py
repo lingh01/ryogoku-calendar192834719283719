@@ -328,7 +328,7 @@ def show_main_dashboard():
                     yaxis_title="件数"
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             else:
                 st.error("スプレッドシートの列名が '日付' と '件数' ではありません。")
         else:
@@ -406,7 +406,7 @@ def show_blog():
                 # We add a bit of vertical space so the button aligns with the text box
                 st.write("") 
                 st.write("")
-                if st.button("➕ 列を追加 ", key=f"add_col_btn_{block_id}", use_container_width=True):
+                if st.button("➕ 列を追加 ", key=f"add_col_btn_{block_id}", width="stretch"):
                     if new_col_name:
                         # Add the new column to the dataframe with empty strings
                         block['data'][new_col_name] = ""
@@ -434,20 +434,20 @@ def show_blog():
                 block['data'], 
                 num_rows="dynamic", 
                 key=f"table_{block_id}", 
-                use_container_width=True
+                width="stretch"
             )
             # The actual data editor
     
     # 3. The Add Buttons at the bottom
     col1, col2 = st.columns(2)
     with col1:
-        st.button("➕ ステップ追加", on_click=add_step, use_container_width=True)
+        st.button("➕ ステップ追加", on_click=add_step, width="stretch")
     with col2:
-        st.button("➕ 表の追加", on_click=add_table, use_container_width=True)
+        st.button("➕ 表の追加", on_click=add_table, width="stretch")
     
     st.subheader("出力")
 
-    if st.button("📄 マニュアルをPDF化する", use_container_width=True):
+    if st.button("📄 マニュアルをPDF化する", width="stretch"):
         # 1. Initialize A4 PDF
         pdf = FPDF(orientation="P", unit="mm", format="A4")
         pdf.add_page()
@@ -492,9 +492,6 @@ def show_blog():
                 # Handle Image if it exists
             # uploaded_img is now a list, so we check if it is truthy (not None and not empty)
             if uploaded_img:
-                from PIL import Image
-                import tempfile
-                import os
                 
                 # Iterate through each uploaded file in the list
                 for img_file in uploaded_img:

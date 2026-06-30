@@ -5,3 +5,4 @@ plotly
 streamlit
 fpdf2
 streamlit-pdf-viewer
+pillow_heif

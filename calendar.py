@@ -8,6 +8,8 @@ import base64
 import tempfile
 import os
 from PIL import Image
+from pillow_heif import register_heif_opener
+register_heif_opener()  # Allows PIL to open HEIC files naturally
 from streamlit_pdf_viewer import pdf_viewer
 import plotly.express as px  # <-- ADD THIS LINE
 import uuid  # NEW: We need this to generate unique IDs for each row
@@ -400,8 +402,7 @@ def show_blog():
             # Unique keys are required for Streamlit widgets inside loops
             st.text_input("本文（必須）", key=f"main_{block_id}")
             st.text_area("補足説明（任意）", key=f"sub_{block_id}")
-            st.file_uploader("画像アップロード（任意）", type=['png', 'jpg', 'jpeg'], key=f"img_{block_id}", accept_multiple_files=True)
-            
+            st.file_uploader("画像アップロード（任意）", type=['png', 'jpg', 'jpeg', 'heic'], key=f"img_{block_id}", accept_multiple_files=True)
             step_counter += 1
             st.markdown("---")
 
@@ -461,6 +462,13 @@ def show_blog():
         st.button("➕ 表の追加", on_click=add_table, width="stretch")
     
     st.subheader("出力")
+    
+    pdf_orientation_choice = st.radio("PDFの向き", options=["縦", "横"], horizontal=True)
+
+    if st.button("📄 マニュアルをPDF化する", width="stretch"):
+        # 1. Initialize A4 PDF based on chosen orientation
+        pdf_orientation = "P" if pdf_orientation_choice == "縦" else "L"
+        pdf = FPDF(orientation=pdf_orientation, unit="mm", format="A4")
 
     if st.button("📄 マニュアルをPDF化する", width="stretch"):
         # 1. Initialize A4 PDF
@@ -549,10 +557,12 @@ def show_blog():
                 df = block['data']
                 pdf.set_font("NotoSansJP", size=10)
                 
-                # Calculate column width dynamically based on A4 width (approx 190mm usable)
+                # Calculate column width dynamically based on A4 width
                 num_columns = len(df.columns)
                 if num_columns > 0:
-                    col_width = 190 / num_columns
+                    # 190mm usable for Vertical, 277mm usable for Horizontal
+                    usable_width = 190 if pdf_orientation == "P" else 277
+                    col_width = usable_width / num_columns
                     
                     # Print Table Rows
                     for index, row in df.iterrows():

@@ -540,17 +540,30 @@ def show_blog():
                 if num_columns > 0:
                     col_width = 190 / num_columns
                     
-                    # Print Table Headers
-                    for col_name in df.columns:
-                        pdf.cell(col_width, 8, txt=str(col_name), border=1, align="C")
-                    pdf.ln()
-                    
                     # Print Table Rows
                     for index, row in df.iterrows():
-                        for col_name in df.columns:
+                        # Save the starting Y position for this row
+                        start_y = pdf.get_y()
+                        max_y = start_y # Keep track of the tallest cell
+                        
+                        for i, col_name in enumerate(df.columns):
                             cell_value = str(row[col_name]) if pd.notna(row[col_name]) else ""
-                            pdf.cell(col_width, 8, txt=cell_value, border=1, align="C")
-                        pdf.ln()
+                            
+                            # Calculate the X position based on column index
+                            current_x = pdf.l_margin + (i * col_width)
+                            
+                            # Move cursor to correct X/Y before drawing the cell
+                            pdf.set_xy(current_x, start_y)
+                            
+                            # multi_cell automatically wraps text!
+                            pdf.multi_cell(col_width, 8, txt=cell_value, border=1, align="C")
+                            
+                            # Update max_y if this cell was taller than the others
+                            if pdf.get_y() > max_y:
+                                max_y = pdf.get_y()
+                                
+                        # After drawing all columns in the row, reset Y to the tallest point
+                        pdf.set_y(max_y)
                 
                 pdf.ln(10) # Add space after table
 

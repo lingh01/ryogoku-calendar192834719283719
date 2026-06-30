@@ -163,6 +163,7 @@ def show_main_dashboard():
             "headerToolbar": {"left": "today prev,next", "center": "title", "right": "dayGridMonth,timeGridWeek"},
             "initialView": "dayGridMonth",
             "locale": "ja",  
+            "timeZone": "Asia/Tokyo"  # <-- ADD THIS TO BE EXTRA SAFE
         }
 
         custom_css = """

@@ -415,12 +415,18 @@ def show_blog():
     if 'blocks' not in st.session_state:
         st.session_state.blocks = []
 
-    
+    # 1. Initialize a custom session state variable for the title
+    if "current_manual_title" not in st.session_state:
+        st.session_state.current_manual_title = "マニュアル"
 
     st.title("マニュアル作成ツール")
 
-    # ADD THIS LINE:
-    manual_title = st.text_input("マニュアルのタイトル", value="マニュアル", key="manual_title_input")
+    # 2. Use the custom variable as the 'value', and remove the 'key' argument
+    manual_title = st.text_input("マニュアルのタイトル", value=st.session_state.current_manual_title)
+    
+    # 3. Constantly sync what the user types back into our custom variable
+    st.session_state.current_manual_title = manual_title
+    
     st.markdown("---")
     
 # --- FETCH MANUAL DATA FROM GOOGLE SHEETS ---
@@ -477,8 +483,8 @@ def show_blog():
                         selected_data = manual_dict[selected_manual_name]["Data"]
                         st.session_state.blocks = deserialize_blocks(selected_data)
                         
-                        # Overwrite the Streamlit title input widget so it matches the loaded manual
-                        st.session_state.manual_title_input = manual_dict[selected_manual_name]["Title"]
+                        # Update our custom session state variable instead of the widget key
+                        st.session_state.current_manual_title = manual_dict[selected_manual_name]["Title"]
                         st.rerun()
                         
             with subcol2:

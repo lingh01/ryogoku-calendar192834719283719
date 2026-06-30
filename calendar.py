@@ -13,6 +13,7 @@ register_heif_opener()  # Allows PIL to open HEIC files naturally
 from streamlit_pdf_viewer import pdf_viewer
 import plotly.express as px  # <-- ADD THIS LINE
 import uuid  # NEW: We need this to generate unique IDs for each row
+import json
 
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhDt08hJDuXwJFYxQ5BXkhlsK9xpl3ClmR22mL-mUFLe9o8Sf_G0Hix1TyNmyNXYvs/exec"
 
@@ -34,6 +35,38 @@ def check_password():
         return False
     else:
         return True
+
+def serialize_blocks(blocks):
+    """Converts blocks (and DataFrames) into a string to save online."""
+    serialized_blocks = []
+    for block in blocks:
+        # Create a copy so we don't mess up the live Streamlit UI
+        safe_block = block.copy() 
+        
+        if safe_block['type'] == 'table':
+            # Grab the latest edits, convert to a standard dictionary
+            df = safe_block.get('edited_data', safe_block['data'])
+            safe_block['data'] = df.to_dict('records')
+            
+            # Remove edited_data from the saved version to keep it clean
+            if 'edited_data' in safe_block:
+                del safe_block['edited_data']
+                
+        # (Optional) You may also want to exclude the 'img' lists here 
+        # or convert the images to Base64 if you intend to save images online!
+                
+        serialized_blocks.append(safe_block)
+        
+    return json.dumps(serialized_blocks)
+
+def deserialize_blocks(json_string):
+    """Converts the downloaded string back into DataFrames for Streamlit."""
+    blocks = json.loads(json_string)
+    for block in blocks:
+        if block['type'] == 'table':
+            # Turn the dictionary back into a Pandas DataFrame
+            block['data'] = pd.DataFrame(block['data'])
+    return blocks
 
 # --- MAIN APP EXECUTION ---
 def show_main_dashboard():
@@ -385,6 +418,82 @@ def show_blog():
     
 
     st.title("マニュアル作成ツール")
+
+# --- FETCH MANUAL DATA FROM GOOGLE SHEETS ---
+    @st.cache_data(ttl=60) 
+    def fetch_manuals():
+        try:
+            response = requests.get(SCRIPT_URL)
+            if response.status_code == 200:
+                return response.json().get("manuals", [])
+            return []
+        except:
+            return []
+
+    saved_manuals = fetch_manuals()
+    
+    # Create a dictionary to easily link the dropdown names to the actual sheet data
+    # We add a slice of the ID so manuals with the same name don't break the system
+    manual_dict = {f"{m['Title']} (ID: {m['ID'][:4]})": m for m in saved_manuals}
+
+    # --- CLOUD SAVE/LOAD UI ---
+    with st.expander("☁️ クラウドに保存 / 読み込み"):
+        colA, colB = st.columns(2)
+        
+        with colA:
+            st.markdown("**現在のマニュアルを保存**")
+            if st.button("クラウドに保存", width="stretch"):
+                json_string = serialize_blocks(st.session_state.blocks)
+                
+                payload = {
+                    "action": "save_manual",
+                    "ID": str(uuid.uuid4()),  
+                    "Title": manual_title,
+                    "Data": json_string
+                }
+                
+                with st.spinner("保存中..."):
+                    requests.post(SCRIPT_URL, json=payload)
+                
+                fetch_manuals.clear() # Clear cache to refresh the dropdown immediately
+                st.success("保存しました！")
+                st.rerun()
+
+        with colB:
+            st.markdown("**マニュアルを読み込み/削除**")
+            
+            # The dropdown now automatically populates with titles straight from your Sheet!
+            selected_manual_name = st.selectbox("マニュアルを選択", list(manual_dict.keys()))
+            
+            subcol1, subcol2 = st.columns(2)
+            with subcol1:
+                if st.button("読み込み (Load)", width="stretch"):
+                    if selected_manual_name:
+                        # Grab the JSON string from the selected manual and decode it
+                        selected_data = manual_dict[selected_manual_name]["Data"]
+                        st.session_state.blocks = deserialize_blocks(selected_data)
+                        
+                        # Overwrite the Streamlit title input widget so it matches the loaded manual
+                        st.session_state.manual_title_input = manual_dict[selected_manual_name]["Title"]
+                        st.rerun()
+                        
+            with subcol2:
+                if st.button("🗑️ 削除", width="stretch"):
+                    if selected_manual_name:
+                        selected_id = manual_dict[selected_manual_name]["ID"]
+                        delete_payload = {
+                            "action": "delete_manual",
+                            "ID": selected_id
+                        }
+                        
+                        with st.spinner("削除中..."):
+                            requests.post(SCRIPT_URL, json=delete_payload)
+                            
+                        fetch_manuals.clear()
+                        st.success("削除しました！")
+                        st.rerun()
+    st.markdown("---")
+
     # ADD THIS LINE:
     manual_title = st.text_input("マニュアルのタイトル", value="マニュアル", key="manual_title_input")
     st.markdown("---")

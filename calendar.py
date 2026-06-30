@@ -424,10 +424,13 @@ def show_blog():
                 st.write("")
                 if st.button("➕ 列を追加 ", key=f"add_col_btn_{block_id}", width="stretch"):
                     if new_col_name:
+                        # FIX: Update the base data using the latest edited data to save edits
+                        if 'edited_data' in block:
+                            block['data'] = block['edited_data'].copy()
                         # Add the new column to the dataframe with empty strings
                         block['data'][new_col_name] = ""
                         # Refresh the app immediately to show the new column
-                        st.rerun() 
+                        st.rerun()
             # --------------------------
 
             # The actual data editor
@@ -441,12 +444,15 @@ def show_blog():
                     rename_dict[col_name] = new_name
                     
                 if st.button("列名を更新", key=f"update_cols_btn_{block_id}"):
+                    # FIX: Update the base data using the latest edited data first
+                    if 'edited_data' in block:
+                        block['data'] = block['edited_data'].copy()
                     # Apply the new names to the dataframe and refresh
                     block['data'] = block['data'].rename(columns=rename_dict)
                     st.rerun()
             # ------------------------------------------
 
-            block['data'] = st.data_editor(
+            block['edited_data'] = st.data_editor(
                 block['data'], 
                 num_rows="dynamic", 
                 key=f"table_{block_id}", 
@@ -554,7 +560,8 @@ def show_blog():
                 step_counter += 1
 
             elif block['type'] == 'table':
-                df = block['data']
+                # FIX: Fetch the edited data for the PDF output
+                df = block.get('edited_data', block['data'])
                 pdf.set_font("NotoSansJP", size=10)
                 
                 # Calculate column width dynamically based on A4 width

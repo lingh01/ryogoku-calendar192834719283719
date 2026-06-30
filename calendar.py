@@ -493,7 +493,11 @@ def show_blog():
             block_id = block['id']
             
             if block['type'] == 'step':
-                # Get text from session state (Streamlit saves widget values in st.session_state using their keys)
+                # FIX: Check if we are too close to the bottom before starting a new step
+                bottom_margin = 270 if pdf_orientation == "P" else 180
+                if pdf.get_y() > bottom_margin - 20: 
+                    pdf.add_page()
+
                 main_text = st.session_state.get(f"main_{block_id}", "")
                 sub_text = st.session_state.get(f"sub_{block_id}", "")
                 uploaded_img = st.session_state.get(f"img_{block_id}", None)
@@ -505,48 +509,48 @@ def show_blog():
                 # Write Sub-text if it exists
                 if sub_text:
                     pdf.set_font("NotoSansJP", size=10)
-                    # multi_cell handles text wrapping automatically
                     pdf.multi_cell(0, 6, txt=sub_text)
+                    pdf.ln(2)
                 
                 # Handle Image if it exists
-            # uploaded_img is now a list, so we check if it is truthy (not None and not empty)
-            if uploaded_img:
-                
-                # Iterate through each uploaded file in the list
-                for img_file in uploaded_img:
-                    try:
-                        # 1. Open image with Pillow to handle format safely
-                        img = Image.open(img_file)
-                        
-                        # 2. Flatten transparency layers to avoid silent white-out errors
-                        if img.mode == "RGBA":
-                            background = Image.new("RGB", img.size, (255, 255, 255))
-                            background.paste(img, mask=img.split()[3])
-                            img = background
-                        else:
-                            img = img.convert("RGB")
-                        
-                        # 3. Save to a temporary JPEG file
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-                            img.save(tmp_file.name, format="JPEG")
-                            tmp_file_path = tmp_file.name
-                        
-                        # 4. Insert image with an EXPLICIT X coordinate position
-                        # OPTION A: Left-aligned with text margins
-                        pdf.image(tmp_file_path, x=pdf.l_margin, w=100)
-                        
-                        # OPTION B: Center it on the A4 page instead (Uncomment below if preferred)
-                        # pdf.image(tmp_file_path, x=(210 - 100) / 2, w=100)
-                        
-                        # OPTIONAL: Add a line break so multiple images don't overlap vertically
-                        pdf.ln(5) 
-                        
-                        os.remove(tmp_file_path) # Clean up temp file
-                        
-                    except Exception as img_err:
-                        st.error(f"画像の埋め込み中にエラーが発生しました ({img_file.name}): {img_err}")
+                if uploaded_img:
+                    for img_file in uploaded_img:
+                        try:
+                            img = Image.open(img_file)
+                            
+                            if img.mode == "RGBA":
+                                background = Image.new("RGB", img.size, (255, 255, 255))
+                                background.paste(img, mask=img.split()[3])
+                                img = background
+                            else:
+                                img = img.convert("RGB")
+                            
+                            # FIX: Calculate aspect ratio to know the exact height of the image
+                            img_w, img_h = img.size
+                            aspect_ratio = img_h / img_w
+                            display_width = 100
+                            display_height = display_width * aspect_ratio
+                            
+                            # FIX: If this specific image will bleed off the page, break to a new page first
+                            if pdf.get_y() + display_height > bottom_margin:
+                                pdf.add_page()
+                            
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+                                img.save(tmp_file.name, format="JPEG")
+                                tmp_file_path = tmp_file.name
+                            
+                            # Draw the image using explicitly grabbed Y coordinate
+                            pdf.image(tmp_file_path, x=pdf.l_margin, y=pdf.get_y(), w=display_width)
+                            
+                            # CRITICAL FIX: Manually push the PDF cursor down past the bottom of the image
+                            pdf.set_y(pdf.get_y() + display_height + 5) 
+                            
+                            os.remove(tmp_file_path)
+                            
+                        except Exception as img_err:
+                            st.error(f"画像の埋め込み中にエラーが発生しました ({img_file.name}): {img_err}")
                     
-                pdf.ln(5) # Add space after the step
+                pdf.ln(5) # Add space after the step finishes entirely
                 step_counter += 1
 
             elif block['type'] == 'table':

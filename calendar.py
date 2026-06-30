@@ -759,68 +759,85 @@ def show_blog():
                     usable_width = 190 if pdf_orientation == "P" else 277
                     col_width = usable_width / num_columns
                     
-                    # Define bottom margin to check for page breaks
                     bottom_margin = 270 if pdf_orientation == "P" else 180
+                    line_height = 8  # Height of a single text line
                     
                     # ==========================================
-                    # FIX 1: PRINT THE HEADERS FIRST
+                    # FIX 1: PERFECT HEADER ROWS
                     # ==========================================
-                    # Check if we need a page break before headers
-                    if pdf.get_y() > bottom_margin - 15:
+                    # 1a. Calculate the max height needed for the header row
+                    max_lines = 1
+                    for col_name in df.columns:
+                        text = str(col_name)
+                        # Estimate lines based on text width vs column width
+                        text_width = pdf.get_string_width(text)
+                        lines = int(text_width / (col_width - 2)) + 1
+                        lines = max(lines, len(text.split('\n'))) # Account for manual "Enters"
+                        if lines > max_lines:
+                            max_lines = lines
+                            
+                    row_height = max_lines * line_height
+                    
+                    # Page break check using the exact calculated row height
+                    if pdf.get_y() + row_height > bottom_margin:
                         pdf.add_page()
                         
                     start_y = pdf.get_y()
-                    max_y = start_y
-                    
-                    # Draw header background slightly gray (Optional, but looks nice)
                     pdf.set_fill_color(240, 240, 240)
                     
                     for i, col_name in enumerate(df.columns):
                         current_x = pdf.l_margin + (i * col_width)
+                        
+                        # First: Draw the empty uniform box (with background and border)
                         pdf.set_xy(current_x, start_y)
+                        pdf.cell(col_width, row_height, border=1, fill=True)
                         
-                        # Add fill=True to apply the background color
-                        pdf.multi_cell(col_width, 8, txt=str(col_name), border=1, align="C", fill=True)
+                        # Second: Draw the text inside the box (no border)
+                        pdf.set_xy(current_x, start_y)
+                        pdf.multi_cell(col_width, line_height, txt=str(col_name), border=0, align="C")
                         
-                        if pdf.get_y() > max_y:
-                            max_y = pdf.get_y()
-                            
-                    pdf.set_y(max_y) # Reset Y to the bottom of the tallest header cell
+                    # Push cursor below the finished row
+                    pdf.set_y(start_y + row_height)
                     
-                    # Reset fill color to white for the rest of the data
+                    # Reset fill color to white for the data
                     pdf.set_fill_color(255, 255, 255)
 
                     # ==========================================
-                    # FIX 2: SAFE ROW ITERATION
+                    # FIX 2: PERFECT DATA ROWS
                     # ==========================================
                     for index, row in df.iterrows():
+                        # 2a. Calculate max height needed for THIS specific data row
+                        max_lines = 1
+                        for col_name in df.columns:
+                            text = str(row[col_name]) if pd.notna(row[col_name]) else ""
+                            text_width = pdf.get_string_width(text)
+                            lines = int(text_width / (col_width - 2)) + 1
+                            lines = max(lines, len(text.split('\n')))
+                            if lines > max_lines:
+                                max_lines = lines
+                                
+                        row_height = max_lines * line_height
                         
-                        # Check if we are too close to the bottom BEFORE drawing this row
-                        if pdf.get_y() > bottom_margin - 15:
+                        # Page break check
+                        if pdf.get_y() + row_height > bottom_margin:
                             pdf.add_page()
                             
-                        # Save the starting Y position for this row
                         start_y = pdf.get_y()
-                        max_y = start_y # Keep track of the tallest cell
                         
                         for i, col_name in enumerate(df.columns):
-                            cell_value = str(row[col_name]) if pd.notna(row[col_name]) else ""
-                            
-                            # Calculate the X position based on column index
+                            text = str(row[col_name]) if pd.notna(row[col_name]) else ""
                             current_x = pdf.l_margin + (i * col_width)
                             
-                            # Move cursor to correct X/Y before drawing the cell
+                            # First: Draw the empty uniform box
                             pdf.set_xy(current_x, start_y)
+                            pdf.cell(col_width, row_height, border=1)
                             
-                            # multi_cell automatically wraps text!
-                            pdf.multi_cell(col_width, 8, txt=cell_value, border=1, align="C")
+                            # Second: Draw the text inside
+                            pdf.set_xy(current_x, start_y)
+                            pdf.multi_cell(col_width, line_height, txt=text, border=0, align="C")
                             
-                            # Update max_y if this cell was taller than the others
-                            if pdf.get_y() > max_y:
-                                max_y = pdf.get_y()
-                                
-                        # After drawing all columns in the row, reset Y to the tallest point
-                        pdf.set_y(max_y)
+                        # Push cursor below the finished row
+                        pdf.set_y(start_y + row_height)
                 
                 pdf.ln(10) # Add space after table
 

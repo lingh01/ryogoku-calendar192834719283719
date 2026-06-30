@@ -471,7 +471,7 @@ def show_blog():
             
             subcol1, subcol2 = st.columns(2)
             with subcol1:
-                if st.button("読み込み (Load)", width="stretch"):
+                if st.button("読み込み", width="stretch"):
                     if selected_manual_name:
                         # Grab the JSON string from the selected manual and decode it
                         selected_data = manual_dict[selected_manual_name]["Data"]
@@ -517,7 +517,7 @@ def show_blog():
 
         # Render a Table
         elif block['type'] == 'table':
-            st.subheader("表 (Table)")
+            st.subheader("表")
             
             # --- NEW: Add Column UI ---
             # We use columns to put the input box and button side-by-side
@@ -540,6 +540,28 @@ def show_blog():
                         block['data'][new_col_name] = ""
                         # Refresh the app immediately to show the new column
                         st.rerun()
+            # ==========================================
+            # ADD THIS: Remove Column UI
+            # ==========================================
+            with st.expander("🗑️ 列を削除"):
+                current_cols = list(block['data'].columns)
+                
+                if current_cols:
+                    col_to_remove = st.selectbox("削除する列を選択", current_cols, key=f"remove_col_select_{block_id}")
+                    
+                    if st.button("🗑️ 列を削除する", key=f"remove_col_btn_{block_id}", width="stretch"):
+                        # Sync with the latest edits before dropping
+                        if 'edited_data' in block:
+                            block['data'] = block['edited_data'].copy()
+                            
+                        # Drop the selected column and overwrite the block's data
+                        block['data'] = block['data'].drop(columns=[col_to_remove])
+                        
+                        # Refresh the app to show the updated table
+                        st.rerun()
+                else:
+                    st.info("削除できる列がありません。")
+            # ==========================================
             # --------------------------
 
             # The actual data editor

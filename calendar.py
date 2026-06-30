@@ -14,6 +14,7 @@ from streamlit_pdf_viewer import pdf_viewer
 import plotly.express as px  # <-- ADD THIS LINE
 import uuid  # NEW: We need this to generate unique IDs for each row
 import json
+import io
 
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhDt08hJDuXwJFYxQ5BXkhlsK9xpl3ClmR22mL-mUFLe9o8Sf_G0Hix1TyNmyNXYvs/exec"
 
@@ -523,10 +524,35 @@ def show_blog():
                     st.session_state.blocks = [b for b in st.session_state.blocks if b['id'] != block_id]
                     st.rerun()
             
-            # Unique keys are required for Streamlit widgets inside loops
-            st.text_input("本文（必須）", key=f"main_{block_id}")
-            st.text_area("補足説明（任意）", key=f"sub_{block_id}")
-            st.file_uploader("画像アップロード（任意）", type=['png', 'jpg', 'jpeg', 'heic'], key=f"img_{block_id}", accept_multiple_files=True)
+            # 1. Bind the text directly to the block dictionary so it saves to JSON
+            block['main_text'] = st.text_input("本文（必須）", value=block.get('main_text', ''), key=f"main_{block_id}")
+            block['sub_text'] = st.text_area("補足説明（任意）", value=block.get('sub_text', ''), key=f"sub_{block_id}")
+            
+            # 2. Handle Image Uploads (Convert to Base64 to make it JSON-compatible)
+            uploaded_imgs = st.file_uploader("画像アップロード（任意）", type=['png', 'jpg', 'jpeg', 'heic'], key=f"img_{block_id}", accept_multiple_files=True)
+            
+            if uploaded_imgs:
+                b64_images = []
+                for img_file in uploaded_imgs:
+                    # Convert the uploaded file bytes to a base64 string
+                    b64_str = base64.b64encode(img_file.getvalue()).decode('utf-8')
+                    b64_images.append(b64_str)
+                # Save the base64 strings to the block
+                block['images'] = b64_images
+                
+            # 3. Show existing images (crucial for when you load from the cloud!)
+            if 'images' in block and block['images']:
+                st.write("🖼️ 保存されている画像:")
+                cols = st.columns(len(block['images']))
+                for idx, b64_str in enumerate(block['images']):
+                    with cols[idx]:
+                        # Decode base64 back to bytes to display in Streamlit
+                        img_bytes = base64.b64decode(b64_str)
+                        st.image(img_bytes, use_container_width=True)
+                        if st.button("❌ 削除", key=f"del_img_{block_id}_{idx}"):
+                            block['images'].pop(idx)
+                            st.rerun()
+
             step_counter += 1
             st.markdown("---")
 
@@ -660,9 +686,9 @@ def show_blog():
                 if pdf.get_y() > bottom_margin - 20: 
                     pdf.add_page()
 
-                main_text = st.session_state.get(f"main_{block_id}", "")
-                sub_text = st.session_state.get(f"sub_{block_id}", "")
-                uploaded_img = st.session_state.get(f"img_{block_id}", None)
+                main_text = block.get('main_text', '')
+                sub_text = block.get('sub_text', '')
+                saved_images_b64 = block.get('images', [])
 
                 # Write Step Header & Main Text
                 pdf.set_font("NotoSansJP", size=14)
@@ -679,10 +705,12 @@ def show_blog():
                     pdf.ln(2)
 
                 # Handle Image if it exists
-                if uploaded_img:
-                    for img_file in uploaded_img:
+                if saved_images_b64:
+                    for b64_str in saved_images_b64:
                         try:
-                            img = Image.open(img_file)
+                            # Convert Base64 string back into bytes that PIL can read
+                            img_bytes = base64.b64decode(b64_str)
+                            img = Image.open(io.BytesIO(img_bytes))
                             
                             if img.mode == "RGBA":
                                 background = Image.new("RGB", img.size, (255, 255, 255))

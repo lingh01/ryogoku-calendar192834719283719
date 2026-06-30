@@ -232,7 +232,7 @@ def show_main_dashboard():
 
         if cal_state.get("eventClick"):
             st.divider()
-            st.subheader("🔍 詳細 / 編集 (Details & Edit)")
+            st.subheader("🔍 詳細 / 編集")
             
             clicked_event = cal_state["eventClick"]["event"]
             props = clicked_event["extendedProps"]
@@ -249,7 +249,7 @@ def show_main_dashboard():
                 st.markdown(f"**発送件数:** {props.get('Item Count')}")
 
             if event_id:
-                with st.expander("✏️ この予定を編集・削除する (Edit / Delete)"):
+                with st.expander("✏️ この予定を編集・削除する"):
                     with st.form("edit_event_form"):
                         
                         current_title = props.get("Title")
@@ -294,9 +294,9 @@ def show_main_dashboard():
 
                         colA, colB = st.columns(2)
                         with colA:
-                            submit_edit = st.form_submit_button("更新 (Update)")
+                            submit_edit = st.form_submit_button("更新")
                         with colB:
-                            submit_delete = st.form_submit_button("🗑️ 削除 (Delete)")
+                            submit_delete = st.form_submit_button("🗑️ 削除")
 
                         if submit_edit:
                             # Figure out the title to update
@@ -561,7 +561,7 @@ def show_blog():
             # Use columns to put the title and delete button side-by-side
             col_title, col_del = st.columns([4, 1])
             with col_title:
-                st.subheader("表 (Table)")
+                st.subheader("表")
             with col_del:
                 st.write("")
                 if st.button("🗑️ ブロックを削除", key=f"del_table_{block_id}"):

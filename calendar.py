@@ -140,14 +140,27 @@ def show_main_dashboard():
     # 2. CALENDAR DISPLAY & EDITING
     # ==========================================
     @st.fragment
+    @st.fragment
     def show_calendar():
         calendar_events = []
         for row in sheet_data:
-            if row.get("Title") and row.get("Start Date"):
+            raw_date = row.get("Start Date")
+            
+            if row.get("Title") and raw_date:
+                # --- NEW PYTHON-SIDE TIMEZONE FIX ---
+                try:
+                    # Force the raw date into UTC, convert to Tokyo time, then extract the correct date string
+                    dt = pd.to_datetime(raw_date, utc=True).tz_convert("Asia/Tokyo")
+                    correct_date_str = dt.strftime("%Y-%m-%d")
+                except Exception:
+                    # Fallback if the date is already a plain string like "YYYY-MM-DD"
+                    correct_date_str = str(raw_date).split("T")[0]
+                # ------------------------------------
+                
                 color = "#3BB873" if row.get("Shipping Type") == "Local" else "#FF6C6C"
                 calendar_events.append({
                     "title": f"{row.get('Title')} ({row.get('PIC', 'N/A')})",
-                    "start": str(row.get("Start Date")).split("T")[0], 
+                    "start": correct_date_str, # Use the corrected date here!
                     "backgroundColor": color,
                     "borderColor": color,
                     "extendedProps": {

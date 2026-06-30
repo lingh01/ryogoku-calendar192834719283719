@@ -7,6 +7,7 @@ from fpdf import FPDF
 import base64
 import tempfile
 import os
+from PIL import Image
 from streamlit_pdf_viewer import pdf_viewer
 import plotly.express as px  # <-- ADD THIS LINE
 import uuid  # NEW: We need this to generate unique IDs for each row

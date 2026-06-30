@@ -759,8 +759,46 @@ def show_blog():
                     usable_width = 190 if pdf_orientation == "P" else 277
                     col_width = usable_width / num_columns
                     
-                    # Print Table Rows
+                    # Define bottom margin to check for page breaks
+                    bottom_margin = 270 if pdf_orientation == "P" else 180
+                    
+                    # ==========================================
+                    # FIX 1: PRINT THE HEADERS FIRST
+                    # ==========================================
+                    # Check if we need a page break before headers
+                    if pdf.get_y() > bottom_margin - 15:
+                        pdf.add_page()
+                        
+                    start_y = pdf.get_y()
+                    max_y = start_y
+                    
+                    # Draw header background slightly gray (Optional, but looks nice)
+                    pdf.set_fill_color(240, 240, 240)
+                    
+                    for i, col_name in enumerate(df.columns):
+                        current_x = pdf.l_margin + (i * col_width)
+                        pdf.set_xy(current_x, start_y)
+                        
+                        # Add fill=True to apply the background color
+                        pdf.multi_cell(col_width, 8, txt=str(col_name), border=1, align="C", fill=True)
+                        
+                        if pdf.get_y() > max_y:
+                            max_y = pdf.get_y()
+                            
+                    pdf.set_y(max_y) # Reset Y to the bottom of the tallest header cell
+                    
+                    # Reset fill color to white for the rest of the data
+                    pdf.set_fill_color(255, 255, 255)
+
+                    # ==========================================
+                    # FIX 2: SAFE ROW ITERATION
+                    # ==========================================
                     for index, row in df.iterrows():
+                        
+                        # Check if we are too close to the bottom BEFORE drawing this row
+                        if pdf.get_y() > bottom_margin - 15:
+                            pdf.add_page()
+                            
                         # Save the starting Y position for this row
                         start_y = pdf.get_y()
                         max_y = start_y # Keep track of the tallest cell

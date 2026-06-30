@@ -385,7 +385,7 @@ def show_blog():
             # Unique keys are required for Streamlit widgets inside loops
             st.text_input("本文（必須）", key=f"main_{block_id}")
             st.text_area("補足説明（任意）", key=f"sub_{block_id}")
-            st.file_uploader("画像アップロード（任意）", type=['png', 'jpg', 'jpeg'], key=f"img_{block_id}")
+            st.file_uploader("画像アップロード（任意）", type=['png', 'jpg', 'jpeg'], key=f"img_{block_id}", accept_multiple_files=True)
             
             step_counter += 1
             st.markdown("---")
@@ -490,14 +490,17 @@ def show_blog():
                     pdf.multi_cell(0, 6, txt=sub_text)
                 
                 # Handle Image if it exists
-                # Handle Image if it exists
-                # Handle Image if it exists
-                if uploaded_img is not None:
-                    from PIL import Image
-                    
+            # uploaded_img is now a list, so we check if it is truthy (not None and not empty)
+            if uploaded_img:
+                from PIL import Image
+                import tempfile
+                import os
+                
+                # Iterate through each uploaded file in the list
+                for img_file in uploaded_img:
                     try:
                         # 1. Open image with Pillow to handle format safely
-                        img = Image.open(uploaded_img)
+                        img = Image.open(img_file)
                         
                         # 2. Flatten transparency layers to avoid silent white-out errors
                         if img.mode == "RGBA":
@@ -519,10 +522,13 @@ def show_blog():
                         # OPTION B: Center it on the A4 page instead (Uncomment below if preferred)
                         # pdf.image(tmp_file_path, x=(210 - 100) / 2, w=100)
                         
+                        # OPTIONAL: Add a line break so multiple images don't overlap vertically
+                        pdf.ln(5) 
+                        
                         os.remove(tmp_file_path) # Clean up temp file
                         
                     except Exception as img_err:
-                        st.error(f"画像の埋め込み中にエラーが発生しました: {img_err}")
+                        st.error(f"画像の埋め込み中にエラーが発生しました ({img_file.name}): {img_err}")
                     
                 pdf.ln(5) # Add space after the step
                 step_counter += 1

@@ -597,7 +597,8 @@ def show_blog():
 
         # Title (Now dynamic!)
         pdf.set_font("NotoSansJP", size=18)
-        # FIX: Use multi_cell so a long title wraps properly
+        # FIX: Ensure cursor is reset to the left margin before multi_cell
+        pdf.set_x(pdf.l_margin)
         pdf.multi_cell(0, 10, txt=manual_title, align="C")
         pdf.ln(10)
 
@@ -619,15 +620,18 @@ def show_blog():
 
                 # Write Step Header & Main Text
                 pdf.set_font("NotoSansJP", size=14)
-                # FIX: Use multi_cell so long step instructions wrap within the page
+                # FIX: Explicitly reset the X cursor so the horizontal width doesn't become 0
+                pdf.set_x(pdf.l_margin) 
                 pdf.multi_cell(0, 10, txt=f"{step_counter}. {main_text}")
                 
                 # Write Sub-text if it exists
                 if sub_text:
                     pdf.set_font("NotoSansJP", size=10)
+                    # FIX: Explicitly reset the X cursor here as well
+                    pdf.set_x(pdf.l_margin) 
                     pdf.multi_cell(0, 6, txt=sub_text)
                     pdf.ln(2)
-                
+                    
                 # Handle Image if it exists
                 if uploaded_img:
                     for img_file in uploaded_img:

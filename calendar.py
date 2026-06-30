@@ -512,7 +512,16 @@ def show_blog():
         
         # Render a Step
         if block['type'] == 'step':
-            st.subheader(f"ステップ {step_counter}")
+            # Use columns to put the title and delete button side-by-side
+            col_title, col_del = st.columns([4, 1])
+            with col_title:
+                st.subheader(f"ステップ {step_counter}")
+            with col_del:
+                st.write("") # Adds vertical spacing to align the button
+                if st.button("🗑️ ブロックを削除", key=f"del_step_{block_id}"):
+                    # Filter out this specific block and rerun
+                    st.session_state.blocks = [b for b in st.session_state.blocks if b['id'] != block_id]
+                    st.rerun()
             
             # Unique keys are required for Streamlit widgets inside loops
             st.text_input("本文（必須）", key=f"main_{block_id}")
@@ -523,7 +532,16 @@ def show_blog():
 
         # Render a Table
         elif block['type'] == 'table':
-            st.subheader("表")
+            # Use columns to put the title and delete button side-by-side
+            col_title, col_del = st.columns([4, 1])
+            with col_title:
+                st.subheader("表 (Table)")
+            with col_del:
+                st.write("")
+                if st.button("🗑️ ブロックを削除", key=f"del_table_{block_id}"):
+                    # Filter out this specific block and rerun
+                    st.session_state.blocks = [b for b in st.session_state.blocks if b['id'] != block_id]
+                    st.rerun()
             
             # --- NEW: Add Column UI ---
             # We use columns to put the input box and button side-by-side

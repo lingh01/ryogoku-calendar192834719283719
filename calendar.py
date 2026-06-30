@@ -466,11 +466,6 @@ def show_blog():
     pdf_orientation_choice = st.radio("PDFの向き", options=["縦", "横"], horizontal=True)
 
     if st.button("📄 マニュアルをPDF化する", width="stretch"):
-        # 1. Initialize A4 PDF based on chosen orientation
-        pdf_orientation = "P" if pdf_orientation_choice == "縦" else "L"
-        pdf = FPDF(orientation=pdf_orientation, unit="mm", format="A4")
-
-    if st.button("📄 マニュアルをPDF化する", width="stretch"):
         # 1. Initialize A4 PDF
         pdf = FPDF(orientation="P", unit="mm", format="A4")
         pdf.add_page()

@@ -419,6 +419,10 @@ def show_blog():
 
     st.title("マニュアル作成ツール")
 
+    # ADD THIS LINE:
+    manual_title = st.text_input("マニュアルのタイトル", value="マニュアル", key="manual_title_input")
+    st.markdown("---")
+    
 # --- FETCH MANUAL DATA FROM GOOGLE SHEETS ---
     @st.cache_data(ttl=60) 
     def fetch_manuals():
@@ -492,10 +496,6 @@ def show_blog():
                         fetch_manuals.clear()
                         st.success("削除しました！")
                         st.rerun()
-    st.markdown("---")
-
-    # ADD THIS LINE:
-    manual_title = st.text_input("マニュアルのタイトル", value="マニュアル", key="manual_title_input")
     st.markdown("---")
 
     # 2. Loop through and render the blocks
@@ -631,7 +631,7 @@ def show_blog():
                     pdf.set_x(pdf.l_margin) 
                     pdf.multi_cell(0, 6, txt=sub_text)
                     pdf.ln(2)
-                    
+
                 # Handle Image if it exists
                 if uploaded_img:
                     for img_file in uploaded_img:

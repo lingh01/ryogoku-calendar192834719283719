@@ -488,8 +488,8 @@ def show_blog():
 
         # Title (Now dynamic!)
         pdf.set_font("NotoSansJP", size=18)
-        # We use the variable 'manual_title' from the top of the function
-        pdf.cell(0, 10, txt=manual_title, ln=True, align="C")
+        # FIX: Use multi_cell so a long title wraps properly
+        pdf.multi_cell(0, 10, txt=manual_title, align="C")
         pdf.ln(10)
 
         # 3. Loop through blocks and print to PDF
@@ -510,7 +510,8 @@ def show_blog():
 
                 # Write Step Header & Main Text
                 pdf.set_font("NotoSansJP", size=14)
-                pdf.cell(0, 10, txt=f"{step_counter}. {main_text}", ln=True)
+                # FIX: Use multi_cell so long step instructions wrap within the page
+                pdf.multi_cell(0, 10, txt=f"{step_counter}. {main_text}")
                 
                 # Write Sub-text if it exists
                 if sub_text:
